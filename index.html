@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Indizien — Cluedo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: light dark;
+    --paper:#F4EFE6; --surface:#FBF8F1; --hairline:#DDD4C4;
+    --ink:#23211C; --muted:#8A8275; --clay:#C45B3C; --clay-tint:#F0E3DC;
+    --serif:'Fraunces',Georgia,serif; --sans:'Hanken Grotesk',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+    --hit:44px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --paper:#201E19; --surface:#2A2722; --hairline:#3B372F; --ink:#F2EDE3; --muted:#9A9284; --clay:#D6764F; --clay-tint:#3A2A22; }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    display:flex;justify-content:center;
+  }
+  .app{
+    width:100%;max-width:480px;min-height:100dvh;background:var(--paper);
+    display:flex;flex-direction:column;
+    border-left:1px solid var(--hairline);border-right:1px solid var(--hairline);
+  }
+  @media (max-width:480px){ .app{border:0} }
+
+  /* top bar */
+  header.topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 16px 11px;border-bottom:1px solid var(--hairline);
+    padding-top:max(14px, env(safe-area-inset-top));
+  }
+  h1.brand{font-family:var(--serif);font-weight:500;font-size:21px;letter-spacing:-.01em;margin:0;line-height:1}
+  h1.brand small{display:block;font-family:var(--sans);font-size:10px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin-top:1px}
+  .tools{display:flex;align-items:center;gap:9px}
+  .logbtn{position:relative;display:inline-flex;align-items:center;justify-content:center;width:var(--hit);height:var(--hit);border:1px solid var(--hairline);border-radius:9px;background:var(--paper);color:var(--muted);cursor:pointer}
+  .logbtn:active{color:var(--ink)}
+  .logbtn .badge{position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--clay);color:#FBF8F1;font-family:var(--mono);font-weight:700;font-size:10px;display:none;align-items:center;justify-content:center;line-height:1}
+  .logbtn .badge.show{display:inline-flex}
+  .lang{display:flex;border:1px solid var(--hairline);border-radius:8px;overflow:hidden}
+  .lang button{border:0;background:transparent;color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.04em;padding:9px 13px;min-height:var(--hit);cursor:pointer}
+  .lang button[aria-pressed="true"]{background:var(--clay);color:#FBF8F1}
+
+  /* rail */
+  .rail{background:var(--surface);border-bottom:1px solid var(--hairline);padding:10px 12px 12px}
+  .railhead{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;display:flex;justify-content:space-between}
+  .railhead b{color:var(--clay)}
+  .steps{display:flex;align-items:stretch;gap:6px}
+  .step{flex:1;min-width:0;border:1px solid var(--hairline);border-radius:9px;background:var(--paper);padding:6px 8px;text-align:left;cursor:pointer;min-height:var(--hit);font-family:var(--sans)}
+  .step small{display:block;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+  .step .v{font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .step.who .v{font-family:var(--mono);font-weight:700}
+  .step.sug .v{font-family:var(--mono);font-size:11px}
+  .step.empty .v{color:var(--muted);font-weight:500;font-family:var(--sans)}
+  .step[aria-current="step"]{border-color:var(--clay);box-shadow:inset 0 0 0 1px var(--clay)}
+  .step[aria-current="step"] small{color:var(--clay)}
+  .ok{border:0;border-radius:9px;background:var(--clay);color:#FBF8F1;font-family:var(--sans);font-weight:700;font-size:13px;padding:0 16px;min-height:var(--hit);cursor:pointer}
+  .ok:disabled{opacity:.4;cursor:not-allowed}
+  .picker{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:9px}
+  .picker .grp{width:100%;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:2px 0 -2px}
+  .chip{min-width:var(--hit);height:var(--hit);padding:0 6px;display:inline-flex;align-items:center;justify-content:center;border-radius:11px;border:1px solid var(--hairline);background:var(--paper);color:var(--ink);cursor:pointer;font-family:var(--mono);font-weight:700;font-size:15px}
+  .chip.card{font-family:var(--sans);font-weight:600;font-size:13px;padding:0 12px}
+  .chip.none{font-family:var(--sans);font-weight:600;font-size:13px;color:var(--muted);padding:0 14px}
+  .chip[aria-pressed="true"]{background:var(--clay);border-color:var(--clay);color:#FBF8F1}
+
+  /* matrix */
+  main.matrix{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
+  table{border-collapse:collapse;width:100%;font-family:var(--mono);font-size:11px}
+  caption{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  thead th{position:sticky;top:0;z-index:2;background:var(--surface);border-bottom:1px solid var(--hairline)}
+  th.corner{position:sticky;left:0;z-index:3;background:var(--surface);text-align:left;font-family:var(--sans);font-weight:700;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:9px 8px;min-width:104px;border-right:1px solid var(--hairline)}
+  th.seat{padding:7px 0 6px;min-width:var(--hit);font-family:var(--mono);font-weight:700;font-size:13px}
+  th.seat .role{display:block;font-family:var(--sans);font-size:8px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-top:1px}
+  th.seat.you .role{color:var(--clay)}
+  th.seat.env{background:var(--clay-tint);color:var(--clay);font-family:var(--sans);font-size:11px;border-left:1px solid var(--hairline)}
+  th.seat.hot{background:var(--clay);color:#FBF8F1;border-radius:6px 6px 0 0}
+  th.seat.hot .role{color:#FBF8F1;opacity:.85}
+  tr.sec th{font-family:var(--serif);font-weight:500;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-align:left;padding:12px 8px 4px;position:sticky;left:0;background:var(--paper)}
+  tbody th.card{position:sticky;left:0;background:var(--surface);text-align:left;font-family:var(--sans);font-weight:500;font-size:12px;padding:0 8px;height:var(--hit);border-right:1px solid var(--hairline);border-bottom:1px solid var(--hairline);white-space:nowrap;color:var(--ink)}
+  td.cellwrap{padding:0;border-bottom:1px solid var(--hairline);border-left:1px solid var(--hairline)}
+  td.cellwrap.env{background:var(--clay-tint)}
+  td.cellwrap.hotcol{background:rgba(196,91,60,.07)}
+  button.cell{width:100%;min-width:var(--hit);height:var(--hit);border:0;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;padding:0}
+  /* Has — manual: solid clay square, ivory check (loud). */
+  .mark-has{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:4px;background:var(--clay);color:#FBF8F1;font-size:13px}
+  /* Has — engine: hollow clay outline, clay check (lighter hand). */
+  .mark-has.eng{background:transparent;border:1.5px solid var(--clay);color:var(--clay);font-size:12px}
+  /* Hasn't — manual: ink strike ~32%. */
+  .mark-hasnt{position:absolute;inset:0}
+  .mark-hasnt::after{content:"";position:absolute;top:50%;left:28%;width:44%;height:1.5px;background:var(--ink);opacity:.32;transform:translateY(-50%) rotate(-32deg)}
+  /* Hasn't — engine: muted strike ~60%, recedes further. */
+  .mark-hasnt.eng::after{background:var(--muted);opacity:.6}
+  td.cellwrap.bad{background:rgba(196,91,60,.18);box-shadow:inset 0 0 0 1px var(--clay)}
+  button.cell:focus-visible{outline:2px solid var(--clay);outline-offset:-3px;border-radius:6px}
+
+  /* the cascade — engine deductions wick across the grid */
+  @media (prefers-reduced-motion: no-preference){
+    .cell.cascade .mark-has,.cell.cascade .mark-hasnt{animation:wick .26s ease-out backwards;animation-delay:var(--d,0ms)}
+  }
+  @keyframes wick{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:none}}
+
+  /* verdict */
+  footer.verdict{border-top:1px solid var(--hairline);background:var(--clay-tint);padding:11px 16px;padding-bottom:max(11px, env(safe-area-inset-bottom));display:flex;gap:10px;align-items:flex-start}
+  .verdict .dot{width:8px;height:8px;border-radius:50%;background:var(--clay);flex:none;margin-top:5px}
+  #verdict-text{font-family:var(--serif);font-style:italic;font-size:13.5px;color:var(--ink);margin:0}
+  #verdict-text b{font-style:normal;font-weight:600;color:var(--clay)}
+
+  .toast{position:fixed;left:50%;bottom:78px;transform:translateX(-50%) translateY(8px);background:var(--ink);color:var(--paper);font-family:var(--sans);font-size:13px;font-weight:600;padding:9px 16px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .18s ease-out, transform .18s ease-out;z-index:40}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.bad{background:var(--clay)}
+  @media (prefers-reduced-motion: reduce){ .toast{transition:none} }
+
+  /* log / setup pull-up sheet */
+  .backdrop{position:fixed;inset:0;background:rgba(35,33,28,.42);opacity:0;transition:opacity .2s ease-out;z-index:50}
+  .backdrop.open{opacity:1}
+  .sheet{position:fixed;left:50%;bottom:0;width:100%;max-width:480px;transform:translate(-50%,100%);transition:transform .22s ease-out;z-index:51;
+    background:var(--surface);border:1px solid var(--hairline);border-radius:16px 16px 0 0;box-shadow:0 -12px 40px rgba(35,33,28,.18);
+    display:flex;flex-direction:column;max-height:84dvh;padding-bottom:max(12px, env(safe-area-inset-bottom))}
+  .sheet.open{transform:translate(-50%,0)}
+  @media (prefers-reduced-motion: reduce){ .backdrop,.sheet{transition:none} }
+  .sheet .grip{width:36px;height:4px;border-radius:2px;background:var(--hairline);margin:9px auto 4px}
+  .sheet header{display:flex;align-items:center;justify-content:space-between;padding:4px 16px 10px;border-bottom:1px solid var(--hairline)}
+  .sheet header h2{font-family:var(--serif);font-weight:500;font-size:18px;margin:0}
+  .sheet .close{border:0;background:transparent;color:var(--muted);font-size:22px;line-height:1;width:var(--hit);height:var(--hit);cursor:pointer}
+  .setup{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--hairline)}
+  .setup .lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .pchips{display:flex;gap:6px}
+  .pchips .chip{min-width:38px}
+  .undo{margin:12px 16px 4px;border:1px solid var(--hairline);border-radius:10px;background:var(--paper);color:var(--ink);font-family:var(--sans);font-weight:600;font-size:13px;min-height:var(--hit);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+  .undo:disabled{opacity:.4;cursor:not-allowed}
+  .events{list-style:none;margin:8px 0 0;padding:0 8px 8px;overflow:auto}
+  .events .empty{color:var(--muted);font-size:13px;text-align:center;padding:20px 8px;font-style:italic;font-family:var(--serif)}
+  .events li{display:flex;align-items:center;gap:8px;padding:4px 8px;border-bottom:1px solid var(--hairline)}
+  .events li .ix{font-family:var(--mono);font-size:10px;color:var(--muted);min-width:18px}
+  .events li .txt{flex:1;font-size:13px;line-height:1.35}
+  .events li .txt .k{font-weight:600}
+  .events li .del{border:0;background:transparent;color:var(--muted);font-size:18px;width:var(--hit);height:var(--hit);cursor:pointer;flex:none}
+  .events li .del:active{color:var(--clay)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <h1 class="brand">Indizien<small data-i18n="tagline">Cluedo</small></h1>
+    <div class="tools">
+      <button class="logbtn" id="logbtn" aria-label="Verlauf">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 5h12M3 9h12M3 13h8"/></svg>
+        <span class="badge" id="logcount"></span>
+      </button>
+      <div class="lang" role="group" aria-label="Sprache / Language">
+        <button data-lang="de" aria-pressed="true">DE</button>
+        <button data-lang="en" aria-pressed="false">EN</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="rail" aria-label="Aktueller Zug">
+    <p class="railhead"><span data-i18n="turn">Aktueller Zug</span><span id="rail-progress"></span></p>
+    <div class="steps">
+      <button class="step who" data-step="asker"><small data-i18n="who_asks">Wer fragt?</small><span class="v" data-slot="asker">—</span></button>
+      <button class="step sug" data-step="suggest"><small data-i18n="suggestion">Verdacht</small><span class="v" data-slot="suggest">—</span></button>
+      <button class="step who" data-step="shower"><small data-i18n="who_shows">Wer zeigt?</small><span class="v" data-slot="shower">—</span></button>
+      <button class="ok" id="commit" disabled data-i18n="ok">OK</button>
+    </div>
+    <div class="picker" id="picker" aria-label="Auswahl"></div>
+  </section>
+
+  <main class="matrix">
+    <table id="grid" role="grid">
+      <caption data-i18n="caption">Verdachtsraster: Karten gegen Spieler und Umschlag</caption>
+      <thead id="grid-head"></thead>
+      <tbody id="grid-body"></tbody>
+    </table>
+  </main>
+
+  <footer class="verdict">
+    <span class="dot" aria-hidden="true"></span>
+    <p id="verdict-text"></p>
+  </footer>
+</div>
+
+<div class="backdrop" id="backdrop" hidden></div>
+<aside class="sheet" id="sheet" hidden aria-label="Verlauf" role="dialog" aria-modal="true">
+  <div class="grip" aria-hidden="true"></div>
+  <header>
+    <h2 data-i18n="log">Verlauf</h2>
+    <button class="close" id="sheet-close" aria-label="Schließen">&times;</button>
+  </header>
+  <div class="setup">
+    <span class="lbl" data-i18n="players">Spieler</span>
+    <div class="pchips" id="pchips"></div>
+  </div>
+  <button class="undo" id="undo" disabled>↶ <span data-i18n="undo_last">Letzten rückgängig</span></button>
+  <ol class="events" id="eventlist"></ol>
+</aside>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script type="module">
+/* Single self-contained offline file — zero dependencies.
+   The event log is the source of truth; the grid is *derived* from it by the
+   deduction engine on every change, so undo is free (drop an event, re-derive). */
+
+/* ---------- data ---------- */
+const ENV = 'env';
+
+const CARDS = {
+  suspects: [
+    {id:'s1', de:'Fräulein Gloria',   en:'Miss Scarlett'},
+    {id:'s2', de:'Oberst von Gatow',  en:'Colonel Mustard'},
+    {id:'s3', de:'Reverend Grün',     en:'Reverend Green'},
+    {id:'s4', de:'Frau Weiß',         en:'Mrs White'},
+    {id:'s5', de:'Professor Bloom',   en:'Professor Plum'},
+    {id:'s6', de:'Baronin von Porz',  en:'Mrs Peacock'},
+  ],
+  weapons: [
+    {id:'w1', de:'Dolch',     en:'Dagger'},
+    {id:'w2', de:'Leuchter',  en:'Candlestick'},
+    {id:'w3', de:'Rohrzange', en:'Wrench'},
+    {id:'w4', de:'Revolver',  en:'Revolver'},
+    {id:'w5', de:'Seil',      en:'Rope'},
+    {id:'w6', de:'Bleirohr',  en:'Lead pipe'},
+  ],
+  rooms: [
+    {id:'r1', de:'Küche',         en:'Kitchen'},
+    {id:'r2', de:'Ballsaal',      en:'Ballroom'},
+    {id:'r3', de:'Wintergarten',  en:'Conservatory'},
+    {id:'r4', de:'Speisezimmer',  en:'Dining Room'},
+    {id:'r5', de:'Billardzimmer', en:'Billiard Room'},
+    {id:'r6', de:'Bibliothek',    en:'Library'},
+    {id:'r7', de:'Salon',         en:'Lounge'},
+    {id:'r8', de:'Halle',         en:'Hall'},
+    {id:'r9', de:'Arbeitszimmer', en:'Study'},
+  ],
+};
+const SECTIONS = [['suspects',CARDS.suspects],['weapons',CARDS.weapons],['rooms',CARDS.rooms]];
+const ALL_CARDS = [...CARDS.suspects, ...CARDS.weapons, ...CARDS.rooms];
+const cardById = Object.fromEntries(ALL_CARDS.map(c => [c.id, c]));
+const catOf = id => id[0]==='s' ? CARDS.suspects : id[0]==='w' ? CARDS.weapons : CARDS.rooms;
+
+const I18N = {
+  de:{ tagline:'Cluedo', turn:'Aktueller Zug', who_asks:'Wer fragt?', suggestion:'Verdacht',
+       who_shows:'Wer zeigt?', ok:'OK', nobody:'niemand', you:'du', env:'Um',
+       suspects:'Verdächtige', weapons:'Waffen', rooms:'Räume',
+       caption:'Verdachtsraster: Karten gegen Spieler und Umschlag',
+       empty_verdict:'Noch nichts sicher — tippe Zellen oder erfasse einen Zug.',
+       step:'Schritt', of:'von', logged:'Zug notiert',
+       pick_person:'Person', pick_weapon:'Waffe', pick_room:'Raum',
+       log:'Verlauf', players:'Spieler', undo_last:'Letzten rückgängig',
+       no_events:'Noch keine Züge erfasst.', by_engine:'berechnet',
+       contradiction:'Widerspruch — prüfe den Verlauf', solved:'Gelöst!',
+       has:'hat', hasnt:'hat nicht', shows:'zeigt', nobody_shows:'niemand zeigt',
+       player:'Spieler', envelope:'Umschlag' },
+  en:{ tagline:'Cluedo', turn:'Current turn', who_asks:'Who asked?', suggestion:'Suggestion',
+       who_shows:'Who showed?', ok:'OK', nobody:'nobody', you:'you', env:'Env',
+       suspects:'Suspects', weapons:'Weapons', rooms:'Rooms',
+       caption:'Deduction grid: cards against players and the envelope',
+       empty_verdict:'Nothing certain yet — tap cells or log a turn.',
+       step:'Step', of:'of', logged:'Turn noted',
+       pick_person:'Person', pick_weapon:'Weapon', pick_room:'Room',
+       log:'Log', players:'Players', undo_last:'Undo last',
+       no_events:'No turns logged yet.', by_engine:'deduced',
+       contradiction:'Contradiction — check the log', solved:'Solved!',
+       has:'has', hasnt:"hasn't", shows:'shows', nobody_shows:'nobody shows',
+       player:'Player', envelope:'Envelope' },
+};
+
+/* ---------- persistent state (the source of truth) ---------- */
+const STORE_KEY = 'indizien.v1';
+let state = { players:4, lang:'de', events:[] };
+function load(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw){ const s = JSON.parse(raw); if(s && typeof s==='object'){
+      state.players = Math.min(6, Math.max(2, s.players|0 || 4));
+      state.lang = s.lang==='en' ? 'en' : 'de';
+      state.events = Array.isArray(s.events) ? s.events : [];
+    }}
+  }catch{ /* corrupt store — start clean */ }
+}
+function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch{} }
+
+let lang = 'de';
+const t = k => I18N[lang][k];
+const cardName = id => cardById[id][lang];
+const seats = () => Array.from({length: state.players}, (_,i)=>i);
+const cols  = () => [...seats(), ENV];
+const ckey = (cardId, col) => `${cardId}|${col}`;
+
+/* ---------- deduction engine ---------- */
+/* derived: key -> {v:'has'|'hasnt', manual:bool}.  Absence = unknown. */
+let derived = new Map();
+let roundOf = new Map();        // key -> propagation round it resolved in (for cascade order)
+let contradiction = false;
+
+/* clockwise players who were asked and passed before `shower` showed.
+   shower===null  → fully unrefuted: everyone but the asker passed. */
+function passers(ev){
+  const N = state.players, out = [];
+  if(ev.shower===null){
+    for(let i=0;i<N;i++) if(i!==ev.asker) out.push(i);
+    return out;
+  }
+  for(let s=(ev.asker+1)%N; s!==ev.shower; s=(s+1)%N){
+    if(s===ev.asker) break;            // safety: wrapped fully (shouldn't happen)
+    out.push(s);
+  }
+  return out;
+}
+
+function deriveAll(){
+  derived = new Map();
+  roundOf = new Map();
+  contradiction = false;
+  const CONS = [];                     // shower one-of constraints
+
+  // set a definite value; manual facts are locked and win over engine writes.
+  const set = (card, holder, v, manual, round) => {
+    const k = ckey(card, holder), ex = derived.get(k);
+    if(!ex){ derived.set(k,{v,manual:!!manual}); roundOf.set(k,round); return true; }
+    if(ex.v===v){ if(manual && !ex.manual) ex.manual=true; return false; }
+    // conflicting definite values
+    if(ex.manual && !manual){ contradiction=true; return false; }   // keep your fact
+    if(!ex.manual && manual){ ex.v=v; ex.manual=true; roundOf.set(k,round); contradiction=true; return true; }
+    contradiction=true; return false;
+  };
+  const val = (card, holder) => derived.get(ckey(card,holder))?.v;
+
+  // 1. hard facts straight from the log (round 0)
+  for(const ev of state.events){
+    if(ev.type==='fact'){
+      set(ev.card, ev.holder, ev.value, true, 0);
+    } else if(ev.type==='suggestion'){
+      for(const p of passers(ev)) for(const c of ev.cards) set(c, p, 'hasnt', false, 0);
+      if(ev.shower!==null) CONS.push({holder:ev.shower, cards:ev.cards});
+    }
+  }
+
+  // 2. fixed-point propagation
+  const COLS = cols();
+  let round = 0, changed = true;
+  while(changed){
+    changed = false; round++;
+    // (a) each card has exactly one holder across players + envelope
+    for(const c of ALL_CARDS){
+      let hasHolder = null, cand = [];
+      for(const h of COLS){ const v = val(c.id,h); if(v==='has') hasHolder=h; else if(v!=='hasnt') cand.push(h); }
+      if(hasHolder!==null){ for(const h of COLS) if(h!==hasHolder && val(c.id,h)!=='hasnt') changed = set(c.id,h,'hasnt',false,round) || changed; }
+      else if(cand.length===1) changed = set(c.id,cand[0],'has',false,round) || changed;
+      else if(cand.length===0) contradiction = true;
+    }
+    // (b) shower held at least one of {a,b,c}; collapses as cards are ruled out
+    for(const con of CONS){
+      let satisfied=false, cand=[];
+      for(const c of con.cards){ const v=val(c,con.holder); if(v==='has') satisfied=true; else if(v!=='hasnt') cand.push(c); }
+      if(satisfied) continue;
+      if(cand.length===1) changed = set(cand[0],con.holder,'has',false,round) || changed;
+      else if(cand.length===0) contradiction = true;
+    }
+    // (c) the envelope holds exactly one card per category
+    for(const [,list] of SECTIONS){
+      let hasCard=null, cand=[];
+      for(const c of list){ const v=val(c.id,ENV); if(v==='has') hasCard=c.id; else if(v!=='hasnt') cand.push(c.id); }
+      if(hasCard!==null){ for(const c of list) if(c.id!==hasCard && val(c.id,ENV)!=='hasnt') changed = set(c.id,ENV,'hasnt',false,round) || changed; }
+      else if(cand.length===1) changed = set(cand[0],ENV,'has',false,round) || changed;
+      else if(cand.length===0) contradiction = true;
+    }
+  }
+}
+
+/* ---------- mutations (every change goes through the log) ---------- */
+function recompute(originKey, animate){
+  deriveAll();
+  buildCascade(originKey, animate);
+  save();
+  render();
+  if(contradiction) showToast(t('contradiction'), true);
+}
+
+function toggleFact(card, holder){
+  // tap cycles unknown -> has -> hasn't -> unknown (per DESIGN.md), edited via the log
+  const existing = state.events.find(e => e.type==='fact' && e.card===card && sameHolder(e.holder,holder));
+  const cur = existing ? existing.value : 'unknown';
+  const next = {unknown:'has', has:'hasnt', hasnt:'unknown'}[cur];
+  state.events = state.events.filter(e => e!==existing);
+  if(next!=='unknown') state.events.push({type:'fact', card, holder, value:next});
+  recompute(ckey(card,holder), true);
+}
+const sameHolder = (a,b) => String(a)===String(b);
+
+function commitSuggestion(){
+  state.events.push({ type:'suggestion', asker:turn.asker, cards:turn.cards.slice(),
+                      shower: turn.shower==='nobody' ? null : turn.shower });
+  turn = { asker:null, cards:[null,null,null], shower:null };
+  activeStep = 'asker';
+  recompute(null, true);
+  showToast(t('logged'));
+}
+
+function removeEvent(ev){ state.events = state.events.filter(e=>e!==ev); recompute(null, true); renderLog(); }
+function undoLast(){ if(state.events.length){ state.events.pop(); recompute(null, true); renderLog(); } }
+function newGame(players){ state.players = players; state.events = []; turn = { asker:null, cards:[null,null,null], shower:null }; activeStep='asker'; recompute(null, false); renderLog(); }
+
+/* ---------- turn (rail) draft ---------- */
+let turn = { asker:null, cards:[null,null,null], shower:null };
+let activeStep = 'asker';
+
+/* ---------- cascade bookkeeping ---------- */
+let prevSnapshot = new Map();   // key -> v from the last render
+let cascade = null;             // {origin, order: Map key->index} for the next renderBody
+function buildCascade(originKey, animate){
+  const snap = new Map([...derived].map(([k,o])=>[k,o.v]));
+  if(!animate){ prevSnapshot = snap; cascade = null; return; }
+  const changed = [];
+  const keys = new Set([...snap.keys(), ...prevSnapshot.keys()]);
+  for(const k of keys){ if(snap.get(k) !== prevSnapshot.get(k) && k!==originKey) changed.push(k); }
+  changed.sort((a,b)=> (roundOf.get(a)??0)-(roundOf.get(b)??0));
+  const order = new Map(); changed.forEach((k,i)=> order.set(k,i));
+  cascade = order.size ? {order} : null;
+  prevSnapshot = snap;
+}
+
+/* ---------- grid render ---------- */
+const head = document.getElementById('grid-head');
+const tbody = document.getElementById('grid-body');
+
+function renderHead(){
+  const tr = document.createElement('tr');
+  const corner = document.createElement('th');
+  corner.className='corner'; corner.scope='col';
+  corner.textContent = lang==='de' ? 'Karte' : 'Card';
+  tr.appendChild(corner);
+  for(const col of cols()){
+    const th = document.createElement('th');
+    th.scope='col';
+    th.className = 'seat' + (col===ENV?' env':'') + (col===0?' you':'') + (turn.shower===col && col!==ENV?' hot':'');
+    th.dataset.col = col;
+    if(col===ENV){ th.textContent = t('env'); th.setAttribute('aria-label', t('envelope')); }
+    else {
+      th.innerHTML = `${col}<span class="role">${col===0?t('you'):''}</span>`;
+      th.setAttribute('aria-label', t('player')+' '+col+(col===0?' ('+t('you')+')':''));
+    }
+    tr.appendChild(th);
+  }
+  head.replaceChildren(tr);
+}
+
+function markFor(v, manual){
+  if(v==='has')   return `<span class="mark-has${manual?'':' eng'}" aria-hidden="true">&#10003;</span>`;
+  if(v==='hasnt') return `<span class="mark-hasnt${manual?'':' eng'}" aria-hidden="true"></span>`;
+  return '';
+}
+function stateWord(v, manual){
+  const m = lang==='de'
+    ? {unknown:'unbekannt', has:'hat die Karte', hasnt:'hat die Karte nicht'}
+    : {unknown:'unknown', has:'has the card', hasnt:'does not have the card'};
+  let s = m[v];
+  if(v!=='unknown' && !manual) s += ' ('+t('by_engine')+')';
+  return s;
+}
+
+function renderBody(){
+  const COLS = cols();
+  const frag = document.createDocumentFragment();
+  for(const [secKey, list] of SECTIONS){
+    const secTr = document.createElement('tr'); secTr.className='sec';
+    const th = document.createElement('th');
+    th.colSpan = COLS.length+1; th.scope='colgroup'; th.textContent = t(secKey);
+    secTr.appendChild(th); frag.appendChild(secTr);
+    for(const c of list){
+      const tr = document.createElement('tr');
+      const rh = document.createElement('th'); rh.className='card'; rh.scope='row'; rh.textContent = c[lang];
+      tr.appendChild(rh);
+      for(const col of COLS){
+        const td = document.createElement('td');
+        td.className = 'cellwrap' + (col===ENV?' env':'') + (turn.shower===col && col!==ENV?' hotcol':'');
+        const d = derived.get(ckey(c.id,col));
+        const v = d ? d.v : 'unknown', manual = d ? d.manual : false;
+        const btn = document.createElement('button');
+        btn.className='cell'; btn.type='button';
+        btn.dataset.card=c.id; btn.dataset.col=col;
+        btn.innerHTML = markFor(v, manual);
+        const k = ckey(c.id,col);
+        if(cascade && cascade.order.has(k)){ btn.classList.add('cascade'); btn.style.setProperty('--d', (cascade.order.get(k)*65)+'ms'); }
+        btn.setAttribute('aria-label', `${c[lang]}, ${col===ENV?t('envelope'):t('player')+' '+col}: ${stateWord(v, manual)}`);
+        td.appendChild(btn); tr.appendChild(td);
+      }
+      frag.appendChild(tr);
+    }
+  }
+  tbody.replaceChildren(frag);
+  cascade = null;  // animation is one-shot
+}
+
+tbody.addEventListener('click', e => {
+  const btn = e.target.closest('button.cell'); if(!btn) return;
+  const {card, col} = btn.dataset;
+  toggleFact(card, col===ENV?ENV:Number(col));
+});
+
+/* ---------- rail ---------- */
+const picker = document.getElementById('picker');
+const commitBtn = document.getElementById('commit');
+function setActive(step){ activeStep = step; renderRail(); renderPicker(); }
+
+function renderRail(){
+  document.querySelectorAll('.steps .step').forEach(s=>{
+    const step = s.dataset.step;
+    s.setAttribute('aria-current', step===activeStep ? 'step':'false');
+    const slot = s.querySelector('.v');
+    if(step==='asker'){ slot.textContent = turn.asker==null?'—':String(turn.asker); s.classList.toggle('empty',turn.asker==null); }
+    if(step==='suggest'){
+      const filled = turn.cards.filter(Boolean);
+      slot.textContent = filled.length? filled.map(id=>cardName(id)).join(' · ') : '—';
+      s.classList.toggle('empty', filled.length===0);
+    }
+    if(step==='shower'){
+      slot.textContent = turn.shower==null?'—':(turn.shower==='nobody'?t('nobody'):String(turn.shower));
+      s.classList.toggle('empty', turn.shower==null);
+    }
+  });
+  const done = [turn.asker!=null, turn.cards.every(Boolean), turn.shower!=null].filter(Boolean).length;
+  document.getElementById('rail-progress').innerHTML = `<b>${t('step')} ${done}</b> ${t('of')} 3`;
+  commitBtn.disabled = !(turn.asker!=null && turn.cards.every(Boolean) && turn.shower!=null);
+  renderHead(); refreshHotCols();
+}
+function refreshHotCols(){
+  document.querySelectorAll('td.cellwrap').forEach(td=>{
+    const col = td.querySelector('button.cell')?.dataset.col;
+    const hot = col!=null && col!==ENV && String(turn.shower)===col;
+    td.classList.toggle('hotcol', !!hot);
+  });
+}
+function chip(label, pressed, on, extra=''){
+  const b=document.createElement('button');
+  b.className='chip'+(extra?' '+extra:''); b.type='button'; b.textContent=label;
+  b.setAttribute('aria-pressed', pressed?'true':'false');
+  b.addEventListener('click', on); return b;
+}
+function renderPicker(){
+  picker.replaceChildren();
+  if(activeStep==='asker' || activeStep==='shower'){
+    for(const s of seats()){
+      // you can't answer your own suggestion: exclude the asker from "who showed"
+      if(activeStep==='shower' && s===turn.asker) continue;
+      picker.appendChild(chip(String(s), (activeStep==='asker'?turn.asker:turn.shower)===s, ()=>{
+        if(activeStep==='asker'){ turn.asker=s; setActive('suggest'); }
+        else { turn.shower=s; renderRail(); }
+      }));
+    }
+    if(activeStep==='shower'){
+      picker.appendChild(chip(t('nobody'), turn.shower==='nobody', ()=>{ turn.shower='nobody'; renderRail(); }, 'none'));
+    }
+  } else { // suggest: fill person -> weapon -> room
+    const slotIdx = turn.cards.findIndex(c=>!c);
+    const groups = [['pick_person',CARDS.suspects],['pick_weapon',CARDS.weapons],['pick_room',CARDS.rooms]];
+    const idx = slotIdx===-1 ? 2 : slotIdx;
+    const [glabel, list] = groups[idx];
+    const g=document.createElement('span'); g.className='grp'; g.textContent=t(glabel); picker.appendChild(g);
+    for(const c of list){
+      picker.appendChild(chip(c[lang], turn.cards[idx]===c.id, ()=>{
+        turn.cards[idx]=c.id;
+        if(idx<2) renderPicker(); else setActive('shower');
+        renderRail();
+      }, 'card'));
+    }
+  }
+}
+document.querySelectorAll('.steps .step').forEach(s=> s.addEventListener('click', ()=> setActive(s.dataset.step)));
+commitBtn.addEventListener('click', commitSuggestion);
+
+/* ---------- verdict ---------- */
+const verdictEl = document.getElementById('verdict-text');
+function renderVerdict(){
+  const find = list => list.find(c => derived.get(ckey(c.id,ENV))?.v==='has');
+  const s=find(CARDS.suspects), w=find(CARDS.weapons), r=find(CARDS.rooms);
+  if(!s && !w && !r){ verdictEl.textContent = t('empty_verdict'); return; }
+  const tok = c => c ? `<b>${c[lang]}</b>` : '…';
+  verdictEl.innerHTML = (lang==='de'
+    ? `Es war ${tok(s)} — ${tok(w)}, ${tok(r)}.`
+    : `It was ${tok(s)} — ${tok(w)}, ${tok(r)}.`)
+    + ((s&&w&&r) ? ` ${t('solved')}` : '');
+}
+
+/* ---------- log / setup sheet ---------- */
+const sheet = document.getElementById('sheet');
+const backdrop = document.getElementById('backdrop');
+const eventlist = document.getElementById('eventlist');
+const undoBtn = document.getElementById('undo');
+const pchips = document.getElementById('pchips');
+const logcount = document.getElementById('logcount');
+
+function evSummary(ev){
+  const who = h => h===ENV ? t('envelope') : t('player')+' '+h;
+  if(ev.type==='fact'){
+    return `${who(ev.holder)} <span class="k">${t(ev.value)}</span> ${cardName(ev.card)}`;
+  }
+  const cards = ev.cards.map(cardName).join(' · ');
+  const show = ev.shower===null ? t('nobody_shows') : `${t('player')} ${ev.shower} ${t('shows')}`;
+  return `${t('player')} ${ev.asker}: <span class="k">${cards}</span> — ${show}`;
+}
+function renderLog(){
+  // player-count chips
+  pchips.replaceChildren();
+  for(let n=2;n<=6;n++){
+    pchips.appendChild(chip(String(n), n===state.players, ()=>{ if(n!==state.players) newGame(n); }));
+  }
+  // event list (newest first)
+  eventlist.replaceChildren();
+  if(!state.events.length){
+    const li=document.createElement('li'); li.className='empty'; li.textContent=t('no_events'); eventlist.appendChild(li);
+  } else {
+    state.events.forEach((ev,i)=>{
+      const li=document.createElement('li');
+      const ix=document.createElement('span'); ix.className='ix'; ix.textContent=(i+1);
+      const txt=document.createElement('span'); txt.className='txt'; txt.innerHTML=evSummary(ev);
+      const del=document.createElement('button'); del.className='del'; del.type='button'; del.innerHTML='&times;';
+      del.setAttribute('aria-label','×'); del.addEventListener('click',()=>removeEvent(ev));
+      li.append(ix,txt,del); eventlist.prepend(li);
+    });
+  }
+  undoBtn.disabled = !state.events.length;
+}
+function updateLogCount(){
+  const n = state.events.length;
+  logcount.textContent = n; logcount.classList.toggle('show', n>0);
+}
+function openSheet(){ renderLog(); sheet.hidden=false; backdrop.hidden=false; requestAnimationFrame(()=>{ sheet.classList.add('open'); backdrop.classList.add('open'); }); }
+function closeSheet(){ sheet.classList.remove('open'); backdrop.classList.remove('open'); setTimeout(()=>{ sheet.hidden=true; backdrop.hidden=true; }, 220); }
+document.getElementById('logbtn').addEventListener('click', openSheet);
+document.getElementById('sheet-close').addEventListener('click', closeSheet);
+backdrop.addEventListener('click', closeSheet);
+undoBtn.addEventListener('click', undoLast);
+
+/* ---------- toast ---------- */
+let toastTimer;
+function showToast(msg, bad){
+  const el=document.getElementById('toast'); el.textContent=msg;
+  el.classList.toggle('bad', !!bad); el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('show'), 1600);
+}
+
+/* ---------- render orchestration + i18n ---------- */
+function render(){
+  renderBody(); renderRail(); renderPicker(); renderVerdict(); updateLogCount();
+  if(!sheet.hidden) renderLog();
+}
+function applyI18n(){
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const k = el.dataset.i18n; if(I18N[lang][k]!=null) el.textContent = I18N[lang][k];
+  });
+  document.querySelectorAll('.lang button').forEach(b=> b.setAttribute('aria-pressed', String(b.dataset.lang===lang)));
+}
+document.querySelectorAll('.lang button').forEach(b=> b.addEventListener('click', ()=>{
+  lang = b.dataset.lang; state.lang = lang; save();
+  applyI18n(); renderPicker(); render();
+}));
+
+/* ---------- boot ---------- */
+load();
+lang = state.lang;
+applyI18n();
+deriveAll(); prevSnapshot = new Map([...derived].map(([k,o])=>[k,o.v]));
+renderHead(); renderPicker(); render();
+document.fonts.ready.then(()=>{ renderHead(); render(); });
+</script>
+</body>
+</html>
