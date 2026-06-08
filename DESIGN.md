@@ -32,8 +32,9 @@
   serif headings, clay accent, hairlines, generous space).
 
 ## Typography
-All three are free and must be **embedded/self-hosted in the single HTML file** for true
-offline use (the preview loads them from Google Fonts via `@import`; ship them inlined).
+All three are free and load from the **Google Fonts CDN** (via `<link>` in `<head>`). They
+are deliberately **not** self-hosted/inlined — see the 2026-06-08 decision below. Once cached
+on first load the app runs offline.
 - **Display/Hero** (app title, section headers, the verdict line): **Fraunces** —
   warm transitional serif with letterpress character; use the optical-size axis. Weights
   400/500/600 + italic for reasoning notes. Both models independently chose it.
@@ -43,8 +44,8 @@ offline use (the preview loads them from Google Fonts via `@import`; ship them i
   locks every column to a spreadsheet rhythm; tabular figures keep envelope-probability
   counts from jittering. (Alt with more character: Commit Mono / Martian Mono, if a
   non-Google CDN is acceptable.)
-- **Loading:** `https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@...&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap`
-  for dev; **self-host/inline** for the offline production build.
+- **Loading:** Google Fonts CDN, shipped as-is (no inline build step):
+  `https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@...&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap`.
 - **Scale (suggested):** display 34–46px, section header 13px tracked uppercase,
   body 15–16px, card label 12px, grid mark 11px. Tune at build time.
 
@@ -155,3 +156,4 @@ always present; logging a turn happens on the same surface.
 | 2026-06-08 | The cascade as the one signature motion | Turns the deduction engine into the product's only decoration. |
 | 2026-06-08 | One single view; always-on turn rail (Variant B) | User: "there really should only be one single view." Modeless rail keeps the grid visible while logging; fastest for the per-turn loop. Pull-up composer (Variant A) retained as fallback. |
 | 2026-06-08 | Numbered seats, 0 = you | User: "replace real names with numbers for minimal setup." Setup collapses to player count; seat 0 is you. Card names stay localized to match physical cards. |
+| 2026-06-08 | Keep Google Fonts CDN; do not inline/self-host fonts | User decision overriding the original embed-for-offline plan. CDN load is cached after first load; true-offline is an accepted trade-off, not a defect. |
