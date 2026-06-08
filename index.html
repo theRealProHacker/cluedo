@@ -198,6 +198,10 @@
     <span class="lbl" data-i18n="players">Spieler</span>
     <div class="pchips" id="pchips"></div>
   </div>
+  <div class="setup" id="setup-starter" hidden>
+    <span class="lbl" data-i18n="starter">Startspieler</span>
+    <div class="pchips" id="schips"></div>
+  </div>
   <button class="undo" id="undo" disabled>↶ <span data-i18n="undo_last">Letzten rückgängig</span></button>
   <ol class="events" id="eventlist"></ol>
 </aside>
@@ -254,7 +258,7 @@ const I18N = {
        empty_verdict:'Noch nichts sicher — tippe Zellen oder erfasse einen Zug.',
        step:'Schritt', of:'von', logged:'Zug notiert',
        pick_person:'Person', pick_weapon:'Waffe', pick_room:'Raum',
-       log:'Verlauf', players:'Spieler', undo_last:'Letzten rückgängig',
+       log:'Verlauf', players:'Spieler', starter:'Startspieler', undo_last:'Letzten rückgängig',
        no_events:'Noch keine Züge erfasst.', by_engine:'berechnet',
        contradiction:'Widerspruch — prüfe den Verlauf', solved:'Gelöst!',
        has:'hat', hasnt:'hat nicht', shows:'zeigt', nobody_shows:'niemand zeigt',
@@ -266,7 +270,7 @@ const I18N = {
        empty_verdict:'Nothing certain yet — tap cells or log a turn.',
        step:'Step', of:'of', logged:'Turn noted',
        pick_person:'Person', pick_weapon:'Weapon', pick_room:'Room',
-       log:'Log', players:'Players', undo_last:'Undo last',
+       log:'Log', players:'Players', starter:'Starter', undo_last:'Undo last',
        no_events:'No turns logged yet.', by_engine:'deduced',
        contradiction:'Contradiction — check the log', solved:'Solved!',
        has:'has', hasnt:"hasn't", shows:'shows', nobody_shows:'nobody shows',
@@ -275,13 +279,14 @@ const I18N = {
 
 /* ---------- persistent state (the source of truth) ---------- */
 const STORE_KEY = 'indizien.v1';
-let state = { players:4, lang:'de', events:[] };
+let state = { players:4, lang:'de', starter:0, events:[] };
 function load(){
   try{
     const raw = localStorage.getItem(STORE_KEY);
     if(raw){ const s = JSON.parse(raw); if(s && typeof s==='object'){
       state.players = Math.min(6, Math.max(2, s.players|0 || 4));
       state.lang = s.lang==='en' ? 'en' : 'de';
+      state.starter = Math.min(state.players-1, Math.max(0, s.starter|0));
       state.events = Array.isArray(s.events) ? s.events : [];
     }}
   }catch{ /* corrupt store — start clean */ }
@@ -294,6 +299,16 @@ const cardName = id => cardById[id][lang];
 const seats = () => Array.from({length: state.players}, (_,i)=>i);
 const cols  = () => [...seats(), ENV];
 const ckey = (cardId, col) => `${cardId}|${col}`;
+
+/* hands: 21 cards − 3 in the envelope = 18 dealt. Players earlier in turn order
+   (from the starter, clockwise) are dealt one fewer; the last `rem` seats get the
+   extra card. So each seat's hand size is exact once we know who started. */
+const DEALT = 18;
+function handSizes(){
+  const N = state.players, base = Math.floor(DEALT/N), rem = DEALT % N, size = {};
+  for(let i=0;i<N;i++) size[(state.starter+i)%N] = base + (i >= N-rem ? 1 : 0);
+  return size;
+}
 
 /* ---------- deduction engine ---------- */
 /* derived: key -> {v:'has'|'hasnt', manual:bool}.  Absence = unknown. */
@@ -346,6 +361,7 @@ function deriveAll(){
 
   // 2. fixed-point propagation
   const COLS = cols();
+  const HAND = handSizes();
   let round = 0, changed = true;
   while(changed){
     changed = false; round++;
@@ -372,6 +388,14 @@ function deriveAll(){
       if(hasCard!==null){ for(const c of list) if(c.id!==hasCard && val(c.id,ENV)!=='hasnt') changed = set(c.id,ENV,'hasnt',false,round) || changed; }
       else if(cand.length===1) changed = set(cand[0],ENV,'has',false,round) || changed;
       else if(cand.length===0) contradiction = true;
+    }
+    // (d) each seat holds exactly its dealt hand size (the card-counting paper can't do)
+    for(const seat of seats()){
+      const size = HAND[seat]; let hasCount = 0; const unknown = [];
+      for(const c of ALL_CARDS){ const v = val(c.id,seat); if(v==='has') hasCount++; else if(v!=='hasnt') unknown.push(c.id); }
+      if(hasCount>size || hasCount+unknown.length<size){ contradiction = true; }
+      else if(hasCount===size){ for(const c of unknown) changed = set(c,seat,'hasnt',false,round) || changed; }   // hand full → rest are out
+      else if(hasCount+unknown.length===size){ for(const c of unknown) changed = set(c,seat,'has',false,round) || changed; } // only enough left to fill the hand → all in
     }
   }
 }
@@ -407,7 +431,8 @@ function commitSuggestion(){
 
 function removeEvent(ev){ state.events = state.events.filter(e=>e!==ev); recompute(null, true); renderLog(); }
 function undoLast(){ if(state.events.length){ state.events.pop(); recompute(null, true); renderLog(); } }
-function newGame(players){ state.players = players; state.events = []; turn = { asker:null, cards:[null,null,null], shower:null }; activeStep='asker'; recompute(null, false); renderLog(); }
+function newGame(players){ state.players = players; if(state.starter>=players) state.starter=0; state.events = []; turn = { asker:null, cards:[null,null,null], shower:null }; activeStep='asker'; recompute(null, false); renderLog(); }
+function setStarter(s){ if(s===state.starter) return; state.starter = s; recompute(null, true); renderLog(); }
 
 /* ---------- turn (rail) draft ---------- */
 let turn = { asker:null, cards:[null,null,null], shower:null };
@@ -596,6 +621,8 @@ const backdrop = document.getElementById('backdrop');
 const eventlist = document.getElementById('eventlist');
 const undoBtn = document.getElementById('undo');
 const pchips = document.getElementById('pchips');
+const schips = document.getElementById('schips');
+const setupStarter = document.getElementById('setup-starter');
 const logcount = document.getElementById('logcount');
 
 function evSummary(ev){
@@ -613,6 +640,11 @@ function renderLog(){
   for(let n=2;n<=6;n++){
     pchips.appendChild(chip(String(n), n===state.players, ()=>{ if(n!==state.players) newGame(n); }));
   }
+  // who started — only changes deductions when the deal is uneven (N=4, N=5)
+  const uneven = (DEALT % state.players) !== 0;
+  setupStarter.hidden = !uneven;
+  schips.replaceChildren();
+  if(uneven) for(const s of seats()) schips.appendChild(chip(String(s), s===state.starter, ()=>setStarter(s)));
   // event list (newest first)
   eventlist.replaceChildren();
   if(!state.events.length){
