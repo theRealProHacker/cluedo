@@ -17,7 +17,15 @@ and what's left in the envelope.
 - **Deduction rules:** each card has exactly one holder (a player or the envelope); the
   shower of a suggestion holds one of the three named cards (and that collapses as cards
   are ruled out); players passed between asker and shower hold none of the three; the
-  envelope holds exactly one suspect, one weapon, one room.
+  envelope holds exactly one suspect, one weapon, one room; and each player holds exactly
+  their dealt hand size, so once a hand is full the rest are ruled out (and once only
+  enough cards are left to fill it, they're all ruled in) — the card-counting the paper
+  grid can't do.
+- **You saw the card.** When *you* (seat 0) ask and a real player shows, you pick which
+  of the three cards you were shown; that's logged as a hard fact, stronger than the
+  "holds one of three" you get from watching other players' turns.
+- **Contradictions surface.** If the log implies an impossible state (a card in two hands,
+  a hand that can't be filled), the verdict strip says so until you fix it.
 
 ## Running it
 

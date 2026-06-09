@@ -96,7 +96,10 @@ Optimize for the common case (most cells become "hasn't") and make the rare, val
     view stays clean. Three event types: known card / suggestion+response (mark passers
     AND shower) / fully unrefuted.
   - **Verdict strip** pinned to the bottom (clay): quietly states the solution as it
-    resolves, e.g. *"Es war Frau Gloria, im Wintergarten."*
+    resolves, e.g. *"Es war Frau Gloria, im Wintergarten."* It is also where a
+    **contradiction** surfaces persistently (*"Widerspruch — prüfe den Verlauf"*) when the
+    log implies an impossible state — the engine's checks are worthless if they only flash
+    in a toast and vanish.
 - **Border radius:** restrained, hierarchical — cells/marks 4px, buttons/cards 8–10px,
   language toggle 7px, chips 999px. No bubble-radius-everything.
 - **Localized card names** so the grid matches the physical cards; names in a swappable
@@ -131,7 +134,10 @@ The entire app is **one view** — no navigation, no separate screens. The matri
 always present; logging a turn happens on the same surface.
 - **Always-on turn rail (chosen, "Variant B"):** a compact rail pinned directly under
   the top bar builds the current turn left to right: **Wer fragt? → Verdacht (3 cards)
-  → Wer zeigt?**. It is modeless (no overlay), so the grid stays visible the whole time.
+  → Wer zeigt?**. When **you** (seat 0) are the asker and a real player shows, a
+  conditional fourth step **Gezeigte Karte / Card shown** appears — you saw the exact
+  card, so the rail logs it as a hard fact rather than the weaker "holds one of three".
+  It is modeless (no overlay), so the grid stays visible the whole time.
   As you pick who showed, that player's **column highlights live** in the grid below —
   input and consequence in the same glance. An `OK` button commits; the rail resets.
 - **Pull-up composer ("Variant A") is the retained alternative.** If the always-on rail
@@ -157,3 +163,5 @@ always present; logging a turn happens on the same surface.
 | 2026-06-08 | One single view; always-on turn rail (Variant B) | User: "there really should only be one single view." Modeless rail keeps the grid visible while logging; fastest for the per-turn loop. Pull-up composer (Variant A) retained as fallback. |
 | 2026-06-08 | Numbered seats, 0 = you | User: "replace real names with numbers for minimal setup." Setup collapses to player count; seat 0 is you. Card names stay localized to match physical cards. |
 | 2026-06-08 | Keep Google Fonts CDN; do not inline/self-host fonts | User decision overriding the original embed-for-offline plan. CDN load is cached after first load; true-offline is an accepted trade-off, not a defect. |
+| 2026-06-09 | Conditional "Gezeigte Karte" rail step when you ask and a player shows | You see the exact card, so log it as a hard fact (stronger than the shower one-of-three). The step only appears for seat-0 asks with a real shower; the rail stays three steps otherwise. |
+| 2026-06-09 | Contradictions live in the verdict strip, not just a toast | A deduction instrument's core value is catching the impossible; a fading toast (and none on reload) let garbage deductions read as fact. The strip carries it persistently. |
