@@ -79,6 +79,17 @@
   .chip.card{font-family:var(--sans);font-weight:600;font-size:13px;padding:0 12px}
   .chip.none{font-family:var(--sans);font-weight:600;font-size:13px;color:var(--muted);padding:0 14px}
   .chip[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#FBF8F1}
+  /* symbol chips (Symbole): pick suspects/weapons/rooms by disc/glyph, not long names */
+  .chip.sym{width:var(--hit);height:var(--hit);min-width:var(--hit);padding:0;display:inline-grid;place-items:center}
+  .chip.sym .disc{width:22px;height:22px}
+  .chip.sym .glyph{width:24px;height:24px;color:var(--ink)}
+  .chip.sym[aria-pressed="true"]{background:var(--navy);border-color:var(--navy)}
+  .chip.sym[aria-pressed="true"] .glyph{color:#FBF8F1}
+  .chip.sym[aria-pressed="true"] .disc{box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.6),0 0 0 2px rgba(255,255,255,.3)}
+  /* chosen suggestion shown as mini symbols in the rail step (no text truncation) */
+  .step.sug .v{display:flex;align-items:center;gap:5px}
+  .step.sug .v .disc{width:15px;height:15px}
+  .step.sug .v .glyph{width:17px;height:17px;color:var(--ink);display:grid;place-items:center}
 
   /* matrix */
   main.matrix{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
@@ -287,6 +298,7 @@ const SECTIONS = [['suspects',CARDS.suspects],['weapons',CARDS.weapons],['rooms'
 const ALL_CARDS = [...CARDS.suspects, ...CARDS.weapons, ...CARDS.rooms];
 const cardById = Object.fromEntries(ALL_CARDS.map(c => [c.id, c]));
 const catOf = id => id[0]==='s' ? CARDS.suspects : id[0]==='w' ? CARDS.weapons : CARDS.rooms;
+const secKeyOf = id => id[0]==='s' ? 'suspects' : id[0]==='w' ? 'weapons' : 'rooms';
 
 /* ---------- symbols (the "Symbole" layer) ----------
    Suspects = canonical colour discs; weapons + rooms = inked glyphs. Tap a
@@ -646,7 +658,8 @@ function renderRail(){
     if(step==='asker'){ slot.textContent = turn.asker==null?'—':String(turn.asker); s.classList.toggle('empty',turn.asker==null); }
     if(step==='suggest'){
       const filled = turn.cards.filter(Boolean);
-      slot.textContent = filled.length? filled.map(id=>cardName(id)).join(' · ') : '—';
+      if(filled.length) slot.innerHTML = filled.map(id=>symbolMarkup(cardById[id], secKeyOf(id))).join('');
+      else slot.textContent = '—';
       s.classList.toggle('empty', filled.length===0);
     }
     if(step==='shower'){
@@ -677,12 +690,21 @@ function chip(label, pressed, on, extra=''){
   b.setAttribute('aria-pressed', pressed?'true':'false');
   b.addEventListener('click', on); return b;
 }
+/* a chip that shows a card's symbol (disc/glyph) instead of its long name */
+function symChip(c, pressed, on){
+  const b=document.createElement('button');
+  b.className='chip sym'; b.type='button';
+  b.innerHTML=symbolMarkup(c, secKeyOf(c.id));
+  b.setAttribute('aria-pressed', pressed?'true':'false');
+  b.setAttribute('aria-label', c[lang]); b.title=c[lang];
+  b.addEventListener('click', on); return b;
+}
 function renderPicker(){
   picker.replaceChildren();
   if(activeStep==='seen'){ // which of the 3 suggested cards you were shown
     const g=document.createElement('span'); g.className='grp'; g.textContent=t('pick_shown'); picker.appendChild(g);
     for(const id of turn.cards){
-      picker.appendChild(chip(cardName(id), turn.seen===id, ()=>{ turn.seen=id; renderRail(); }, 'card'));
+      picker.appendChild(symChip(cardById[id], turn.seen===id, ()=>{ turn.seen=id; renderRail(); renderPicker(); }));
     }
   } else if(activeStep==='asker' || activeStep==='shower'){
     for(const s of seats()){
@@ -703,11 +725,11 @@ function renderPicker(){
     const [glabel, list] = groups[idx];
     const g=document.createElement('span'); g.className='grp'; g.textContent=t(glabel); picker.appendChild(g);
     for(const c of list){
-      picker.appendChild(chip(c[lang], turn.cards[idx]===c.id, ()=>{
+      picker.appendChild(symChip(c, turn.cards[idx]===c.id, ()=>{
         turn.cards[idx]=c.id; turn.seen=null;
         if(idx<2) renderPicker(); else setActive('shower');
         renderRail();
-      }, 'card'));
+      }));
     }
   }
 }
