@@ -86,10 +86,10 @@
   .chip.sym[aria-pressed="true"]{background:var(--navy);border-color:var(--navy)}
   .chip.sym[aria-pressed="true"] .glyph{color:#FBF8F1}
   .chip.sym[aria-pressed="true"] .disc{box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.6),0 0 0 2px rgba(255,255,255,.3)}
-  /* chosen suggestion shown as mini symbols in the rail step (no text truncation) */
-  .step.sug .v{display:flex;align-items:center;gap:5px}
-  .step.sug .v .disc{width:15px;height:15px}
-  .step.sug .v .glyph{width:17px;height:17px;color:var(--ink);display:grid;place-items:center}
+  /* chosen cards shown as mini symbols in the rail steps (no text truncation) */
+  .step.sug .v, .step.who .v{display:flex;align-items:center;gap:5px;overflow:visible}
+  .step .v .disc{width:15px;height:15px;flex:none}
+  .step .v .glyph{width:17px;height:17px;color:var(--ink);display:grid;place-items:center;flex:none}
 
   /* matrix */
   main.matrix{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
@@ -663,9 +663,12 @@ function renderRail(){
       s.classList.toggle('empty', filled.length===0);
     }
     if(step==='shower'){
-      let txt = turn.shower==null?'—':(turn.shower==='nobody'?t('nobody'):String(turn.shower));
-      if(turn.seen) txt += ' · ' + cardName(turn.seen);
-      slot.textContent = txt;
+      if(turn.shower==null){ slot.textContent = '—'; }
+      else {
+        const who = turn.shower==='nobody' ? t('nobody') : String(turn.shower);
+        // seat number + the exact card you saw, as a mini symbol (no truncating name)
+        slot.innerHTML = `<span>${who}</span>` + (turn.seen ? symbolMarkup(cardById[turn.seen], secKeyOf(turn.seen)) : '');
+      }
       s.classList.toggle('empty', turn.shower==null);
     }
   });
