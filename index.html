@@ -257,7 +257,7 @@ const I18N = {
        caption:'Verdachtsraster: Karten gegen Spieler und Umschlag',
        empty_verdict:'Noch nichts sicher — tippe Zellen oder erfasse einen Zug.',
        step:'Schritt', of:'von', logged:'Zug notiert',
-       pick_person:'Person', pick_weapon:'Waffe', pick_room:'Raum',
+       pick_person:'Person', pick_weapon:'Waffe', pick_room:'Raum', pick_shown:'Gezeigte Karte',
        log:'Verlauf', players:'Spieler', starter:'Startspieler', undo_last:'Letzten rückgängig',
        no_events:'Noch keine Züge erfasst.', by_engine:'berechnet',
        contradiction:'Widerspruch — prüfe den Verlauf', solved:'Gelöst!',
@@ -269,7 +269,7 @@ const I18N = {
        caption:'Deduction grid: cards against players and the envelope',
        empty_verdict:'Nothing certain yet — tap cells or log a turn.',
        step:'Step', of:'of', logged:'Turn noted',
-       pick_person:'Person', pick_weapon:'Weapon', pick_room:'Room',
+       pick_person:'Person', pick_weapon:'Weapon', pick_room:'Room', pick_shown:'Card shown',
        log:'Log', players:'Players', starter:'Starter', undo_last:'Undo last',
        no_events:'No turns logged yet.', by_engine:'deduced',
        contradiction:'Contradiction — check the log', solved:'Solved!',
@@ -423,7 +423,11 @@ const sameHolder = (a,b) => String(a)===String(b);
 function commitSuggestion(){
   state.events.push({ type:'suggestion', asker:turn.asker, cards:turn.cards.slice(),
                       shower: turn.shower==='nobody' ? null : turn.shower });
-  turn = { asker:null, cards:[null,null,null], shower:null };
+  // you saw the actual card → log it as a hard fact (stronger than the shower one-of)
+  if(needsSeen() && turn.cards.includes(turn.seen)){
+    state.events.push({ type:'fact', card:turn.seen, holder:turn.shower, value:'has' });
+  }
+  turn = { asker:null, cards:[null,null,null], shower:null, seen:null };
   activeStep = 'asker';
   recompute(null, true);
   showToast(t('logged'));
@@ -431,12 +435,15 @@ function commitSuggestion(){
 
 function removeEvent(ev){ state.events = state.events.filter(e=>e!==ev); recompute(null, true); renderLog(); }
 function undoLast(){ if(state.events.length){ state.events.pop(); recompute(null, true); renderLog(); } }
-function newGame(players){ state.players = players; if(state.starter>=players) state.starter=0; state.events = []; turn = { asker:null, cards:[null,null,null], shower:null }; activeStep='asker'; recompute(null, false); renderLog(); }
+function newGame(players){ state.players = players; if(state.starter>=players) state.starter=0; state.events = []; turn = { asker:null, cards:[null,null,null], shower:null, seen:null }; activeStep='asker'; recompute(null, false); renderLog(); }
 function setStarter(s){ if(s===state.starter) return; state.starter = s; recompute(null, true); renderLog(); }
 
 /* ---------- turn (rail) draft ---------- */
-let turn = { asker:null, cards:[null,null,null], shower:null };
+let turn = { asker:null, cards:[null,null,null], shower:null, seen:null };
 let activeStep = 'asker';
+// when YOU (seat 0) ask and a real player shows, you see the exact card — a hard fact,
+// not the weak "one of three" the other players' turns give you.
+const needsSeen = () => turn.asker===0 && turn.shower!=null && turn.shower!=='nobody';
 
 /* ---------- cascade bookkeeping ---------- */
 let prevSnapshot = new Map();   // key -> v from the last render
@@ -539,7 +546,8 @@ function setActive(step){ activeStep = step; renderRail(); renderPicker(); }
 function renderRail(){
   document.querySelectorAll('.steps .step').forEach(s=>{
     const step = s.dataset.step;
-    s.setAttribute('aria-current', step===activeStep ? 'step':'false');
+    const current = step===activeStep || (step==='shower' && activeStep==='seen');
+    s.setAttribute('aria-current', current ? 'step':'false');
     const slot = s.querySelector('.v');
     if(step==='asker'){ slot.textContent = turn.asker==null?'—':String(turn.asker); s.classList.toggle('empty',turn.asker==null); }
     if(step==='suggest'){
@@ -548,13 +556,18 @@ function renderRail(){
       s.classList.toggle('empty', filled.length===0);
     }
     if(step==='shower'){
-      slot.textContent = turn.shower==null?'—':(turn.shower==='nobody'?t('nobody'):String(turn.shower));
+      let txt = turn.shower==null?'—':(turn.shower==='nobody'?t('nobody'):String(turn.shower));
+      if(turn.seen) txt += ' · ' + cardName(turn.seen);
+      slot.textContent = txt;
       s.classList.toggle('empty', turn.shower==null);
     }
   });
-  const done = [turn.asker!=null, turn.cards.every(Boolean), turn.shower!=null].filter(Boolean).length;
-  document.getElementById('rail-progress').innerHTML = `<b>${t('step')} ${done}</b> ${t('of')} 3`;
-  commitBtn.disabled = !(turn.asker!=null && turn.cards.every(Boolean) && turn.shower!=null);
+  // the "what did you see" sub-step only counts when you asked and a real player showed
+  const steps = [turn.asker!=null, turn.cards.every(Boolean), turn.shower!=null];
+  if(needsSeen()) steps.push(!!turn.seen);
+  const done = steps.filter(Boolean).length;
+  document.getElementById('rail-progress').innerHTML = `<b>${t('step')} ${done}</b> ${t('of')} ${steps.length}`;
+  commitBtn.disabled = !steps.every(Boolean);
   renderHead(); refreshHotCols();
 }
 function refreshHotCols(){
@@ -572,17 +585,22 @@ function chip(label, pressed, on, extra=''){
 }
 function renderPicker(){
   picker.replaceChildren();
-  if(activeStep==='asker' || activeStep==='shower'){
+  if(activeStep==='seen'){ // which of the 3 suggested cards you were shown
+    const g=document.createElement('span'); g.className='grp'; g.textContent=t('pick_shown'); picker.appendChild(g);
+    for(const id of turn.cards){
+      picker.appendChild(chip(cardName(id), turn.seen===id, ()=>{ turn.seen=id; renderRail(); }, 'card'));
+    }
+  } else if(activeStep==='asker' || activeStep==='shower'){
     for(const s of seats()){
       // you can't answer your own suggestion: exclude the asker from "who showed"
       if(activeStep==='shower' && s===turn.asker) continue;
       picker.appendChild(chip(String(s), (activeStep==='asker'?turn.asker:turn.shower)===s, ()=>{
-        if(activeStep==='asker'){ turn.asker=s; setActive('suggest'); }
-        else { turn.shower=s; renderRail(); }
+        if(activeStep==='asker'){ turn.asker=s; turn.seen=null; setActive('suggest'); }
+        else { turn.shower=s; turn.seen=null; if(needsSeen()) setActive('seen'); else renderRail(); }
       }));
     }
     if(activeStep==='shower'){
-      picker.appendChild(chip(t('nobody'), turn.shower==='nobody', ()=>{ turn.shower='nobody'; renderRail(); }, 'none'));
+      picker.appendChild(chip(t('nobody'), turn.shower==='nobody', ()=>{ turn.shower='nobody'; turn.seen=null; renderRail(); }, 'none'));
     }
   } else { // suggest: fill person -> weapon -> room
     const slotIdx = turn.cards.findIndex(c=>!c);
@@ -592,7 +610,7 @@ function renderPicker(){
     const g=document.createElement('span'); g.className='grp'; g.textContent=t(glabel); picker.appendChild(g);
     for(const c of list){
       picker.appendChild(chip(c[lang], turn.cards[idx]===c.id, ()=>{
-        turn.cards[idx]=c.id;
+        turn.cards[idx]=c.id; turn.seen=null;
         if(idx<2) renderPicker(); else setActive('shower');
         renderRail();
       }, 'card'));
