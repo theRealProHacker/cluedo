@@ -72,6 +72,10 @@ on first load the app runs offline.
 - **Dark mode:** Warm dark, not cold black. Reference tokens:
   `--paper:#201E19 --surface:#2A2722 --hairline:#3B372F --ink:#F2EDE3 --muted:#9A9284
    --navy:#5b8ac4 --navy-tint:rgba(91,138,196,.12) --gold:#caa75a --gold-tint:#332b1d --good:#7faa86`.
+  A top-bar **switch** (sun/moon icon, beside the DE/EN toggle) overrides the system:
+  light/dark persisted to localStorage via a `data-theme` attr on `:root`. Default is
+  **follow `prefers-color-scheme`** until the first toggle (no attr = auto); forcing light
+  wins over a dark system via `:root:not([data-theme="light"])` on the media query.
 
 ## Cell Encoding (the heart of the product)
 Optimize for the common case (most cells become "hasn't") and make the rare, valuable
@@ -183,3 +187,4 @@ always present; logging a turn happens on the same surface.
 | 2026-06-09 | Kept Fraunces + Hanken Grotesk + JetBrains Mono after a `/design-shotgun` font run | Explored Futura/Jost (official-Cluedo branding) and Newsreader (the mock's serif) against the original three-font system; the original read best on the symbol ledger. |
 | 2026-06-09 | Weapon glyphs from game-icons.net (CC BY 3.0) | Hand-drawn weapon SVGs were weak; swapped 5 for real vectors (Lorc & Delapouite: sacrificial-dagger, monkey-wrench, revolver, rope-coil, lead-pipe) + a photo-matched candlestick. Attribution comment in index.html. |
 | 2026-06-09 | Suspect colour = row identity, not cell state | Keeps "state by form, not hue" intact for cells; the disc only says which card the row is. |
+| 2026-06-09 | Manual dark-mode switch (sun/moon) in the top bar | Dark mode was system-only; added an explicit light/dark toggle that overrides `prefers-color-scheme`, persisted to localStorage. Defaults to following the system until first toggle. |
