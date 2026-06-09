@@ -10,13 +10,16 @@
 <style>
   :root{
     color-scheme: light dark;
-    --paper:#F4EFE6; --surface:#FBF8F1; --hairline:#DDD4C4;
-    --ink:#23211C; --muted:#8A8275; --clay:#C45B3C; --clay-tint:#F0E3DC;
+    --paper:#fbfaf6; --surface:#f4f1e9; --hairline:#e6e0d3;
+    --ink:#2b2926; --muted:#6f685c;
+    --navy:#1f3a5f; --navy-tint:rgba(31,58,95,.06);
+    --gold:#b08534; --gold-tint:#f3ebd9; --good:#3f6b4a;
     --serif:'Fraunces',Georgia,serif; --sans:'Hanken Grotesk',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
     --hit:44px;
   }
   @media (prefers-color-scheme: dark){
-    :root{ --paper:#201E19; --surface:#2A2722; --hairline:#3B372F; --ink:#F2EDE3; --muted:#9A9284; --clay:#D6764F; --clay-tint:#3A2A22; }
+    :root{ --paper:#201E19; --surface:#2A2722; --hairline:#3B372F; --ink:#F2EDE3; --muted:#9A9284;
+      --navy:#5b8ac4; --navy-tint:rgba(91,138,196,.12); --gold:#caa75a; --gold-tint:#332b1d; --good:#7faa86; }
   }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%}
@@ -43,16 +46,16 @@
   .tools{display:flex;align-items:center;gap:9px}
   .logbtn{position:relative;display:inline-flex;align-items:center;justify-content:center;width:var(--hit);height:var(--hit);border:1px solid var(--hairline);border-radius:9px;background:var(--paper);color:var(--muted);cursor:pointer}
   .logbtn:active{color:var(--ink)}
-  .logbtn .badge{position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--clay);color:#FBF8F1;font-family:var(--mono);font-weight:700;font-size:10px;display:none;align-items:center;justify-content:center;line-height:1}
+  .logbtn .badge{position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--navy);color:#FBF8F1;font-family:var(--mono);font-weight:700;font-size:10px;display:none;align-items:center;justify-content:center;line-height:1}
   .logbtn .badge.show{display:inline-flex}
   .lang{display:flex;border:1px solid var(--hairline);border-radius:8px;overflow:hidden}
   .lang button{border:0;background:transparent;color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.04em;padding:9px 13px;min-height:var(--hit);cursor:pointer}
-  .lang button[aria-pressed="true"]{background:var(--clay);color:#FBF8F1}
+  .lang button[aria-pressed="true"]{background:var(--navy);color:#FBF8F1}
 
   /* rail */
   .rail{background:var(--surface);border-bottom:1px solid var(--hairline);padding:10px 12px 12px}
   .railhead{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;display:flex;justify-content:space-between}
-  .railhead b{color:var(--clay)}
+  .railhead b{color:var(--navy)}
   .steps{display:flex;align-items:stretch;gap:6px}
   .step{flex:1;min-width:0;border:1px solid var(--hairline);border-radius:9px;background:var(--paper);padding:6px 8px;text-align:left;cursor:pointer;min-height:var(--hit);font-family:var(--sans)}
   .step small{display:block;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
@@ -60,46 +63,66 @@
   .step.who .v{font-family:var(--mono);font-weight:700}
   .step.sug .v{font-family:var(--mono);font-size:11px}
   .step.empty .v{color:var(--muted);font-weight:500;font-family:var(--sans)}
-  .step[aria-current="step"]{border-color:var(--clay);box-shadow:inset 0 0 0 1px var(--clay)}
-  .step[aria-current="step"] small{color:var(--clay)}
-  .ok{border:0;border-radius:9px;background:var(--clay);color:#FBF8F1;font-family:var(--sans);font-weight:700;font-size:13px;padding:0 16px;min-height:var(--hit);cursor:pointer}
+  .step[aria-current="step"]{border-color:var(--navy);box-shadow:inset 0 0 0 1px var(--navy)}
+  .step[aria-current="step"] small{color:var(--navy)}
+  .ok{border:0;border-radius:9px;background:var(--navy);color:#FBF8F1;font-family:var(--sans);font-weight:700;font-size:13px;padding:0 16px;min-height:var(--hit);cursor:pointer}
   .ok:disabled{opacity:.4;cursor:not-allowed}
   .picker{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:9px}
   .picker .grp{width:100%;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:2px 0 -2px}
   .chip{min-width:var(--hit);height:var(--hit);padding:0 6px;display:inline-flex;align-items:center;justify-content:center;border-radius:11px;border:1px solid var(--hairline);background:var(--paper);color:var(--ink);cursor:pointer;font-family:var(--mono);font-weight:700;font-size:15px}
   .chip.card{font-family:var(--sans);font-weight:600;font-size:13px;padding:0 12px}
   .chip.none{font-family:var(--sans);font-weight:600;font-size:13px;color:var(--muted);padding:0 14px}
-  .chip[aria-pressed="true"]{background:var(--clay);border-color:var(--clay);color:#FBF8F1}
+  .chip[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#FBF8F1}
 
   /* matrix */
   main.matrix{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
   table{border-collapse:collapse;width:100%;font-family:var(--mono);font-size:11px}
   caption{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
   thead th{position:sticky;top:0;z-index:2;background:var(--surface);border-bottom:1px solid var(--hairline)}
-  th.corner{position:sticky;left:0;z-index:3;background:var(--surface);text-align:left;font-family:var(--sans);font-weight:700;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:9px 8px;min-width:104px;border-right:1px solid var(--hairline)}
+  th.corner{position:sticky;left:0;z-index:3;background:var(--surface);width:56px;min-width:56px;padding:9px 4px;border-right:1px solid var(--hairline)}
   th.seat{padding:7px 0 6px;min-width:var(--hit);font-family:var(--mono);font-weight:700;font-size:13px}
   th.seat .role{display:block;font-family:var(--sans);font-size:8px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-top:1px}
-  th.seat.you .role{color:var(--clay)}
-  th.seat.env{background:var(--clay-tint);color:var(--clay);font-family:var(--sans);font-size:11px;border-left:1px solid var(--hairline)}
-  th.seat.hot{background:var(--clay);color:#FBF8F1;border-radius:6px 6px 0 0}
+  th.seat.you .role{color:var(--navy)}
+  th.seat.env{background:var(--gold-tint);color:var(--gold);font-family:var(--sans);font-size:11px;border-left:1px solid var(--hairline)}
+  th.seat.hot{background:var(--navy);color:#FBF8F1;border-radius:6px 6px 0 0}
   th.seat.hot .role{color:#FBF8F1;opacity:.85}
   tr.sec th{font-family:var(--serif);font-weight:500;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-align:left;padding:12px 8px 4px;position:sticky;left:0;background:var(--paper)}
-  tbody th.card{position:sticky;left:0;background:var(--surface);text-align:left;font-family:var(--sans);font-weight:500;font-size:12px;padding:0 8px;height:var(--hit);border-right:1px solid var(--hairline);border-bottom:1px solid var(--hairline);white-space:nowrap;color:var(--ink)}
+  tbody th.card{position:sticky;left:0;z-index:1;background:var(--surface);width:56px;min-width:56px;padding:0;height:var(--hit);border-right:1px solid var(--hairline);border-bottom:1px solid var(--hairline);overflow:visible}
   td.cellwrap{padding:0;border-bottom:1px solid var(--hairline);border-left:1px solid var(--hairline)}
-  td.cellwrap.env{background:var(--clay-tint)}
-  td.cellwrap.hotcol{background:rgba(196,91,60,.07)}
+  td.cellwrap.env{background:var(--gold-tint)}
+  td.cellwrap.hotcol{background:rgba(31,58,95,.07)}
   button.cell{width:100%;min-width:var(--hit);height:var(--hit);border:0;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;padding:0}
-  /* Has — manual: solid clay square, ivory check (loud). */
-  .mark-has{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:4px;background:var(--clay);color:#FBF8F1;font-size:13px}
-  /* Has — engine: hollow clay outline, clay check (lighter hand). */
-  .mark-has.eng{background:transparent;border:1.5px solid var(--clay);color:var(--clay);font-size:12px}
+  /* Has — manual: solid navy square, ivory check (loud). */
+  .mark-has{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:4px;background:var(--navy);color:#FBF8F1;font-size:13px}
+  /* Has — engine: hollow navy outline, navy check (lighter hand). */
+  .mark-has.eng{background:transparent;border:1.5px solid var(--navy);color:var(--navy);font-size:12px}
   /* Hasn't — manual: ink strike ~32%. */
   .mark-hasnt{position:absolute;inset:0}
   .mark-hasnt::after{content:"";position:absolute;top:50%;left:28%;width:44%;height:1.5px;background:var(--ink);opacity:.32;transform:translateY(-50%) rotate(-32deg)}
   /* Hasn't — engine: muted strike ~60%, recedes further. */
   .mark-hasnt.eng::after{background:var(--muted);opacity:.6}
-  td.cellwrap.bad{background:rgba(196,91,60,.18);box-shadow:inset 0 0 0 1px var(--clay)}
-  button.cell:focus-visible{outline:2px solid var(--clay);outline-offset:-3px;border-radius:6px}
+  td.cellwrap.bad{background:rgba(31,58,95,.18);box-shadow:inset 0 0 0 1px var(--navy)}
+  button.cell:focus-visible{outline:2px solid var(--navy);outline-offset:-3px;border-radius:6px}
+
+  /* symbol left margin (Symbole): suspects = colour discs, weapons/rooms = inked glyphs.
+     Tap a symbol to reveal the full card name. */
+  .symbtn{width:44px;height:44px;border:0;background:transparent;cursor:pointer;display:grid;place-items:center;border-radius:11px;padding:0;color:var(--ink)}
+  .symbtn:active{background:var(--paper)}
+  .symbtn:focus-visible{outline:2px solid var(--navy);outline-offset:-2px}
+  .disc{width:24px;height:24px;border-radius:50%;box-shadow:inset 0 0 0 1.5px rgba(43,41,38,.22),0 1px 3px -1px rgba(43,41,38,.45)}
+  .disc.light{box-shadow:inset 0 0 0 1.5px var(--hairline),0 1px 3px -1px rgba(43,41,38,.25)}
+  .glyph{width:26px;height:26px;color:var(--ink);display:grid;place-items:center}
+  .glyph svg{width:100%;height:100%}
+  .reveal{position:absolute;left:50px;top:50%;transform:translateY(-50%);white-space:nowrap;z-index:12;pointer-events:none;
+    background:var(--ink);color:var(--paper);font-family:var(--serif);font-style:italic;font-size:14px;padding:5px 11px;border-radius:9px;
+    box-shadow:0 8px 22px -10px rgba(43,41,38,.7);opacity:0;transition:opacity .14s ease-out}
+  .reveal::before{content:'';position:absolute;left:-4px;top:50%;transform:translateY(-50%) rotate(45deg);width:9px;height:9px;background:var(--ink);border-radius:2px}
+  .reveal.open{opacity:1}
+  @media (prefers-reduced-motion: reduce){ .reveal{transition:none} }
+  /* solved row: the envelope holds this card */
+  tr.sol td.cellwrap.env{background:rgba(63,107,74,.14)}
+  tr.sol .disc{box-shadow:inset 0 0 0 1.5px var(--good),0 0 0 3px rgba(63,107,74,.18)}
+  tr.sol .glyph{color:var(--good)}
 
   /* the cascade — engine deductions wick across the grid */
   @media (prefers-reduced-motion: no-preference){
@@ -108,14 +131,14 @@
   @keyframes wick{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:none}}
 
   /* verdict */
-  footer.verdict{border-top:1px solid var(--hairline);background:var(--clay-tint);padding:11px 16px;padding-bottom:max(11px, env(safe-area-inset-bottom));display:flex;gap:10px;align-items:flex-start}
-  .verdict .dot{width:8px;height:8px;border-radius:50%;background:var(--clay);flex:none;margin-top:5px}
+  footer.verdict{border-top:1px solid var(--hairline);background:var(--navy-tint);padding:11px 16px;padding-bottom:max(11px, env(safe-area-inset-bottom));display:flex;gap:10px;align-items:flex-start}
+  .verdict .dot{width:8px;height:8px;border-radius:50%;background:var(--navy);flex:none;margin-top:5px}
   #verdict-text{font-family:var(--serif);font-style:italic;font-size:13.5px;color:var(--ink);margin:0}
-  #verdict-text b{font-style:normal;font-weight:600;color:var(--clay)}
+  #verdict-text b{font-style:normal;font-weight:600;color:var(--navy)}
 
   .toast{position:fixed;left:50%;bottom:78px;transform:translateX(-50%) translateY(8px);background:var(--ink);color:var(--paper);font-family:var(--sans);font-size:13px;font-weight:600;padding:9px 16px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .18s ease-out, transform .18s ease-out;z-index:40}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-  .toast.bad{background:var(--clay)}
+  .toast.bad{background:var(--navy)}
   @media (prefers-reduced-motion: reduce){ .toast{transition:none} }
 
   /* log / setup pull-up sheet */
@@ -143,7 +166,7 @@
   .events li .txt{flex:1;font-size:13px;line-height:1.35}
   .events li .txt .k{font-weight:600}
   .events li .del{border:0;background:transparent;color:var(--muted);font-size:18px;width:var(--hit);height:var(--hit);cursor:pointer;flex:none}
-  .events li .del:active{color:var(--clay)}
+  .events li .del:active{color:var(--navy)}
 </style>
 </head>
 <body>
@@ -249,6 +272,38 @@ const SECTIONS = [['suspects',CARDS.suspects],['weapons',CARDS.weapons],['rooms'
 const ALL_CARDS = [...CARDS.suspects, ...CARDS.weapons, ...CARDS.rooms];
 const cardById = Object.fromEntries(ALL_CARDS.map(c => [c.id, c]));
 const catOf = id => id[0]==='s' ? CARDS.suspects : id[0]==='w' ? CARDS.weapons : CARDS.rooms;
+
+/* ---------- symbols (the "Symbole" layer) ----------
+   Suspects = canonical colour discs; weapons + rooms = inked glyphs. Tap a
+   symbol in the grid to reveal the full name. Weapon glyphs w1/w3/w4/w5/w6 are
+   from game-icons.net (Lorc & Delapouite), licensed CC BY 3.0
+   (https://creativecommons.org/licenses/by/3.0/). The candlestick (w2) and the
+   nine room glyphs are hand-drawn for this project. */
+const SUS_COLORS = { s1:'#b23a48', s2:'#c8962f', s3:'#4a7a52', s4:'#efe9dc', s5:'#6a4a78', s6:'#2f6f8c' };
+const SUS_LIGHT  = { s4:true };   // pale disc gets a ring instead of relying on fill
+const ICONS = {
+  // weapons
+  w1:'<svg viewBox="0 0 512 512" fill="currentColor"><path d="M51.438 20.344c-.53.008-1.067.03-1.594.062-8.444.54-16.707 4.267-22.688 11.063-11.96 13.59-10.622 34.6 2.97 46.56 10.514 9.256 25.48 10.558 37.25 4.376 25.11 37.356 71.58 79.415 109.75 98.656l-54.763 62.22-75.75-35.29 60.188 52.973-.112.13 15 13.186L261.51 115.415l.02.033 19.35-21.986-74.84-65.868 44.355 70.222-58.05 65.967c-22.824-35.32-69.262-77.595-109.69-98.624C87.444 52.636 84.31 37.82 73.72 28.5c-6.372-5.607-14.352-8.287-22.282-8.156zm.968 18.562c3.184.107 6.34 1.312 8.97 3.625 6.008 5.29 6.57 14.18 1.28 20.19C57.368 68.727 48.51 69.29 42.5 64c-6.01-5.29-6.603-14.177-1.313-20.188 2.645-3.005 6.213-4.643 9.844-4.874.455-.03.92-.047 1.376-.032zM243.78 163.812L190.376 224.5l303.28 266.938c6.093-69.34-117.503-205.138-172.186-258.313-13.02 11.276-32.71 11.51-46-.188-13.484-11.865-15.638-31.819-5.626-46.218l-26.063-22.907z"/></svg>',
+  w2:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.2 2.6 H12.8 V6.2 H11.2 Z"/><path d="M9.7 6.1 H14.3 L13.2 8.5 H10.8 Z"/><path d="M11.3 8.5 C10.7 11.2 11 14.4 11.4 17.5 H12.6 C13 14.4 13.3 11.2 12.7 8.5 Z"/><path d="M11.3 17.3 C9 18.2 7.4 19.6 6.9 21.2 H17.1 C16.6 19.6 15 18.2 12.7 17.3 Z"/><path fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" d="M12 2.4 V1.6"/></svg>',
+  w3:'<svg viewBox="0 0 512 512" fill="currentColor"><path d="M417.972 37.51c-1.67-.02-3.093.17-4.218.544l-20.127 6.71 63.95 63.948-22.628 22.627 21.212 21.212 27.576-27.578c6.01-6.01 7.04-13.12 4.383-23.152-2.655-10.033-9.698-21.883-18.933-32.438-9.235-10.554-20.62-19.874-31.123-25.603-7.878-4.297-15.083-6.214-20.092-6.27zM354.338 98.81l-45.952 45.95c5.99 1.255 12.28 2.304 18.506 2.534 12.166.45 23.204-1.815 32.397-11.008l6.362-6.363 17.64 17.64.073.073 4.914 4.914 9.9-9.9-43.842-43.84zm67.884 45.254l-21.214 21.215 21.212 21.213 21.213-21.214-21.21-21.214zm-56.57 14.156c-1.773 0-3.545.703-4.95 2.107-2.808 2.808-2.808 7.09 0 9.9 2.81 2.81 7.09 2.81 9.9 0 2.808-2.81 2.808-7.092 0-9.9-1.405-1.405-3.177-2.108-4.95-2.108zm-72.32 1.596l-28.09 28.09 93.516 93.513c1.927-.694 5.33-2.472 9.257-5.14 4.036-2.746 8.643-6.35 13.44-10.464-7.204 2.642-15.128 1.97-21.463-4.366l-33.942-33.94c-16.086-16.088 4.237-42.443 23.043-41.142 1.67.116 3.328.455 4.948 1.034-2.19-1.138-4.24-2.62-6.066-4.446-5.053-5.053-7.464-11.816-7.246-18.507-4.92.785-9.81 1.008-14.502.834-12.924-.478-24.25-3.404-32.894-5.466zm94.226 17.47c-1.107 2.04-2.513 3.953-4.228 5.668-7.18 7.18-17.813 9.033-26.78 5.573 1.688.903 3.32 2.09 4.856 3.624l33.94 33.94c6.817 6.816 7.093 15.475 3.722 23.093 8.43-8.698 16.1-17.75 21.014-24.975 2.67-3.925 4.45-7.328 5.144-9.256l-37.668-37.668zM254.3 202.42l-26.195 43.66 4.04 19.296 17.374 3.31 35.523-35.523L254.3 202.42zm93.024 1.96c-3.75.04-11.022 7.926-8.547 10.4l33.94 33.942c2.83 2.828 12.73-7.07 9.902-9.898l-33.943-33.942c-.353-.353-.817-.508-1.353-.502zm-38.24 52.824l-4.95 4.95c-7.424 7.424-10.522 14.256-11.244 19.304-.72 5.05.637 8.274 2.758 10.395 2.12 2.12 5.346 3.48 10.395 2.758 5.048-.72 11.88-3.82 19.304-11.244l4.95-4.95-21.213-21.212zm-95.91 5.4L47.7 428.076c4.836 1.544 9.377 4.213 13.188 8.024 3.812 3.813 6.48 8.357 8.024 13.192l165.215-165.215-17.143-3.265-3.81-18.21zM37.554 444.377c-3.82 0-7.638 1.485-10.605 4.45-5.934 5.935-5.934 15.28 0 21.214 5.932 5.934 15.28 5.934 21.212 0 5.933-5.933 5.933-15.28 0-21.213-2.967-2.967-6.788-4.452-10.608-4.452z"/></svg>',
+  w4:'<svg viewBox="0 0 512 512" fill="currentColor"><path d="M481.14 125.357c-18.78 5.476-34.912 14.487-46.952 32.973h46.953v-32.973zm-188.915 50.01l-13.125.002-.116 35.74H491.47l-.343-35.74H292.225v-.003zm-29.125.002l-33.07.003-97.298.008c-16.018 27.973-16.89 57.78 1.04 94.07H262.8l.063-20.22H168.09a8 8 0 1 1 0-16h94.8v-22.68h-95.15a8 8 0 1 1 0-16h95.3l.06-19.18zm-161.377.01c-7.834 28.723-12.348 45.61-18.73 58.69-6.78 13.893-15.75 23.88-32.3 41.7C11.077 351.204 17.48 389.416 20.46 432.083c12.07 14.128 29.67 21.282 48.724 23.54 17.703 2.097 36.135-.286 50.816-4.597-.272-47.016 8.213-93.296 40.84-139.84l5.264-7.507 6.724 6.23c18.24 16.9 40.922 21.272 63.205 17.717 22.283-3.555 43.756-15.464 57.254-30.285 9.92-10.894 12.492-23.074 11.66-37.932h-26.115l-.084 26.04h-.695c-9.56 10.992-33.904 24.083-47.803 24.146-13.556.06-35.84-13.197-47.896-24.145H123.88l-2.253-4.266c-20.284-38.435-21.828-74.208-7.06-105.803h-12.844zm-74.88 2.47c7.33 23.547 19.127 43.547 34.825 60.796 2.733-3.822 4.952-7.508 6.945-11.593 2.33-4.772 4.44-10.37 6.715-17.44-.225-.142-.403-.248-.635-.394-7.68-4.854-17.46-11.227-27.117-17.58-10.508-6.916-13.477-8.943-20.734-13.79zm252.09 49.26l-.042 13.66v2.638h82.72V227.11h-82.676zM88.642 293.9c16.474 0 30 13.525 30 29.998 0 16.474-13.526 30-30 30-16.473 0-30-13.526-30-30 0-16.473 13.527-29.998 30-29.998zm0 15.998c-7.826 0-14 6.174-14 14 0 7.827 6.174 14 14 14 7.827 0 14-6.173 14-14 0-7.826-6.173-14-14-14zm-18.025 67.676a13 13 0 0 1 12.625 12.998 13 13 0 1 1-26 0 13 13 0 0 1 13.375-12.998z"/></svg>',
+  w5:'<svg viewBox="0 0 512 512" fill="currentColor"><path d="M248.9 57.48c0 3.7.2 7.9 1.1 12.6 20.6-.3 43 .3 61.4 2.1-.4-4.3-.4-8.3.2-12.1-22.7-2.4-41.8-3.3-62.7-2.6zm-18 1c-30.5 2.3-57.8 7.8-78.9 15.2 1.5 2.6 3.5 5.7 5.6 9.2 18.1-5.9 44.5-10.2 74.3-12-.7-4.6-1-8.8-1-12.4zm98.5 4.2c-.5 3.2-.4 7.1.6 11.9 17.3 2.8 31 6.6 39.8 11.1 6.2-2.2 12.7-3.5 19-4.1-18.7-10.1-40.6-15.6-59.4-18.9zm-194.2 18c-7.4 3.7-13.5 7.6-17.9 11.4-6.8 6-9.2 11.22-9.2 15.82 2.9 14.4 16.6 21.4 28 26.7 3.6-7.3 7.9-14.2 13.3-20.3-10.4-4.1-15.9-8.9-16-13.8 0-3.42 2.6-6.82 7.6-10.12-2.1-3.4-4.1-6.6-5.8-9.7zm243.9 20.92c-3.4 5.5-13.3 10.6-28.4 14.9 2.5 8.6 3.3 17 3.6 25.4 15.8-5 33.1-11.3 45.4-21.9 5.4-5.5 10.7-12.1 8.6-19.4-9.6-2.12-19.9-1.52-29.2 1zm-203.6 13.8c-13.2 8.3-21.9 21.6-27.6 37.8.9 14.7 1.6 34.9 13 45.5 4.4-31.8 21.3-64.2 39.6-81.5-8.2-7.8-16.5-7.1-25-1.8zm157.5 5.3c-17.9 3.5-39.2 5.8-61.7 6.7-6.6 12.4-6.9 17.5-8.3 27.4 26.7-.5 51.7-3.5 73.2-8.3-.2-9-.3-17.6-3.2-25.8zm-116.2 6c-9.2 7.6-16.3 15.7-21.7 24 15.4 2.3 32.1 3.8 49.7 4.2 1.5-9.6 2.2-16.8 6.4-27.1-11.7 0-23.3-.4-34.4-1.1zm-120.36.1c-10.37 22.3 13.36 36.6 28.26 44 1.2-6.5 2.8-13.1 4.8-19.4-13-6.4-25.3-13.4-33.06-24.6zm318.16 3.9c-9.5 8.9-22 15.9-32 20.2 2.9 10 3.6 20.3 1 29.7 11.6-4.6 21-9.8 27.4-15.2 7.8-6.4 11-12.5 11.2-18.2.2-5.1-2.1-10.5-7.6-16.5zm-48.9 26.5c-19.5 6.4-42.7 11.1-68.1 13.6-8.2 7.1-8.3 18.1-7.2 27.2 24.3-1.2 46.8-4.3 66-9 10.2-11.2 13-18.5 9.3-31.8zm-279.88 7.4c-16.43 29.7 13.58 45.8 34.28 54.7.2-9.6.7-19.7 1.8-29.8-13.9-7.3-26.6-14.2-36.08-24.9zm348.98.6c-6.3 9.9-14.8 16.8-24 22.2 2.1 7.4 2.3 14.4.5 21.1 11.6-6.9 26.5-19.5 26.6-32.6 0-3.5-1-7-3.1-10.7zm-248.4 2.4c-2.8 7.2-4.7 14.4-6 21.8 5.1 1.1 10.4 2.1 15.9 3.1.4-8.7 2.7-16 7.3-22.4-5.9-.7-11.6-1.5-17.2-2.5zm39.8 4.5c-7.2 6.4-13 14.6-11.9 23 20.9 2.4 38.8 3.5 58 3.4-.6-9.6-.5-17.9 2.6-26-16.3.7-33.6.5-48.7-.4zM63.79 194.2c-5.2 10.1-1.05 22.2 4.29 29.4 1.34-4 2.89-8.8 4.97-14.3-4.05-4.7-7.22-9.7-9.26-15.1zm330.81 1.4c-21.7 8.8-47.2 14.4-67.5 17.2-6.3 6.7-3.7 16-2.4 23.4 24.5-3.9 46.3-9.7 64.1-16.8 2.8-7.6 7.3-16.4 5.8-23.8zm-255.5 3c-1.7 20.8-1.1 41.8-.9 58.8 4.9 20.2 23.5 7.1 23.5 4.4-.3-12.2-1.8-27.1-1.7-43.3-10.2-5.3-16.7-11.2-20.9-19.9zm303.2 8.4c-.9 1-1.8 1.9-2.8 2.8 1.4 10.5 1.7 22.4 1.4 32 4.7-5.6 7-11.1 7.3-16.7.3-5.8-1.5-11.8-5.9-18.1zm-264 .4c-.5 9.6-.3 19.1.2 28.3 10.6 1.8 21.9 3.3 33.6 4.3-2.1-9.6-2.2-18.6 2-26.8-12.5-1.4-24.4-3.4-35.8-5.8zm127.8 7.6c-25.5 1.7-47.4 1.9-70.7.3-9.1 6.9-6.9 18.2-3.9 26 25.4 1.1 51.8 0 75.3-2.7-1.3-8.4-2.6-15.9-.7-23.6zm-218.49 7.1c-1.93 5.7-3.42 10.6-5.27 15.4 13.3 9.2 24.56 15.3 37.86 20.8-.1-6-.2-12.6-.3-19.6-12.4-4.8-23.26-10.3-32.29-16.6zm335.09.6c-16.5 9.8-33.3 16.3-50.3 21.3-1.4 11.2-4.9 22-1.1 31.8 16.4-4 32.7-9.4 46.9-16.9 4.9-11.3 5.1-26.1 4.5-36.2zm38.3 23.7c1.3 4.8 1.8 9.9 1.7 15 6.7-3.2 13.7-3.8 20.1-1.2 0-6.3-.8-12.6-2.4-18.8-5.2-14.1-21.7-5.2-19.4 5zM53.99 234.8c-3.31 5.4-4.88 10.7-4.88 16 2.71 17.2 12 26.6 24.31 35.3-.92-10.1 1.9-20.1 7.91-27.4-10.73-7.3-20.11-14.4-27.34-23.9zm298.81 14.3c-18 4.1-37.6 7.2-58.5 8.9-7.4 7.5-7.7 18.4-4.3 27.6 22.7-.5 44-2.7 63.2-6.1-1.8-10-1.6-21.5-.4-30.4zm-173.4 5c.5 7.1-.1 15.4-4 20.9 5.1 1.1 10.4 2.2 15.8 3.2-1.1-7.9-1.2-15.3 1.5-22.1-4.5-.6-9-1.3-13.3-2zm32.7 4c-5.8 6.5-3.4 16.3-1.8 23.1 21.7 2.7 40.8 4.2 60.9 4.5-1.8-9.2-1.6-18.1 1.2-26.4-20.1.8-42.1.3-60.3-1.2zm235.3 2.6c-11.1 9.2-24.8 16.7-36 21.3-2.2 7-.4 13.4 1.2 19.6 14.3-6.1 26-13 34.7-20.2-.5-7 1.4-14.4.1-20.7zm-349.96 7c-9.27 8.4-5.52 22.6-2.7 30.7 13.96 6.6 29.76 11.9 43.16 15.6-2.4-10.8-2.3-20.6 2.9-29.3-15.8-5.2-29.9-10.3-43.36-17zm375.86 8.8c-20.1 14.4-27.9 35-44.1 52.7 2.7 7 6.2 13.1 9.2 19.4 20.3-20.6 36.1-43.9 42-68-1.9-2.2-4.5-4.7-7.1-4.1zm-80.9 12.2c-20.7 6.3-44.7 10.8-70.9 13.2-3.9 7.1-.5 16.1 1.7 22.5 27.1-3.5 51.7-9.2 72.5-16.3-1.8-6.8-3.4-12.9-3.3-19.4zm-232.9 1.2c-9 9-3.9 22-.3 29.1 17.7 3.7 37 6.4 57.4 8-2.8-9.1-3-18.6.4-26.8-20.3-2.4-39.6-5.9-57.5-10.3zm77.9 12.3c-7.9 6.9-4.9 18.4-.6 26 22.7.8 47.2.1 68.1-1.8-2.4-7.7-4-15.8-2.9-23.2-23.6.8-43.5.6-64.6-1zM51.5 359c.46 7.7 3.53 15.5 6.97 21.5 19.87-17.9 41.63-25.4 65.13-20.2.9-6.9 4.6-13.9 8.8-18.6-28.2-7.4-60.89.3-80.9 17.3zm362.8-15.1c-10.8 9.8-22.9 19-35.6 27.2 3.4 5.9 7.6 11.7 10.4 17.2 12.5-8.1 24.4-17 35.4-26.7-2.2-4.4-8.1-19.4-10.2-17.7zm-262.2 4.6c-6.4 4.7-11.1 10.2-10.8 17.5 18.5 7.5 37.1 19.4 56.3 31.2 1.3-6 3.5-14.1 6.3-19.6-16.5-10.3-33.6-21.3-51.8-29.1zM36.81 376.4c-6.69 11.2-9.67 24.8-6.04 38.5 1.92 7.2 5.61 14.2 11.05 20.8 3.15-7.2 6.85-12.5 13.04-15.9-4.23-6.3-6.36-13.8-5.46-20.8-5.67-6.8-9.89-14.7-12.59-22.6zm326.49 4.1c-19.4 11-39.4 19.7-57.8 24.9-1.8 5.3-2.4 12.2-.5 20.9 22.2-5.6 45.9-15.5 68.7-28.6-3.3-6.4-7-11.5-10.4-17.2zm-144.2 6.4c-3.1 5.6-5.1 11.7-3.4 21.2 22.4 12.8 46.1 23 71.6 21.2-1.4-7.1-1.7-13.8-1-20-22 1.6-43.9-8.6-67.2-22.4zM61.46 453c4.6 3.2 10.89 1.9 13.98-2.7 3.09-4.7 1.78-10.9-2.91-14-11.83-7.4-18.76 11.4-11.07 16.7z"/></svg>',
+  w6:'<svg viewBox="0 0 512 512" fill="currentColor"><path d="M440.783 22.424c-2.382.04-4.63.42-6.646 1.178l-148.725 93.875-125.28 165.15c.972 7.275 1.65 13.713 1.65 13.713L145.435 302 52.56 424.432a38.188 26.876 37.184 0 1 30.288 9.912 38.188 26.876 37.184 0 1 18.03 28.566l219.278-289.056-1.943-31.5 12.213 23.632 140.47-88.664c7.383-9.426 8.96-18.574 7.038-26.62l-15.998 5.54L472.48 39.27c-2.533-3.414-5.665-6.433-9.13-8.93-7.054-5.082-15.42-8.035-22.567-7.916zM52.705 438.676a30.876 21.73 37.184 0 0-1.857.023 30.876 21.73 37.184 0 0-14.244 6.763 30.876 21.73 37.184 0 0 11.464 35.974 30.876 21.73 37.184 0 0 37.735 1.348 30.876 21.73 37.184 0 0-11.47-35.973 30.876 21.73 37.184 0 0-21.628-8.136zm1.762 15.146a14.803 10.418 37.184 0 1 .004 0 14.803 10.418 37.184 0 1 11.26 3.89 14.803 10.418 37.184 0 1 5.497 17.247 14.803 10.418 37.184 0 1-18.09-.647 14.803 10.418 37.184 0 1-5.498-17.247 14.803 10.418 37.184 0 1 6.827-3.244z"/></svg>',
+  // rooms (hand-drawn line glyphs)
+  r1:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11 L6 19 H18 L19 11 Z"/><path d="M4 11 H20"/><path d="M12 11 V9"/><circle cx="12" cy="8" r="0.9"/><path d="M5 12.5 L3 13.5 M19 12.5 L21 13.5"/></svg>',
+  r2:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 V15"/><path d="M16 7 V16"/><path d="M9 5 L16 7"/><path d="M9 7.4 L16 9.4"/><ellipse cx="7.4" cy="15.6" rx="1.9" ry="1.5"/><ellipse cx="14.4" cy="16.6" rx="1.9" ry="1.5"/></svg>',
+  r3:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 16 L9 21 H15 L16 16 Z"/><path d="M8 16 H16"/><path d="M12 16 V10"/><path d="M12 12 C9 12 8 10 8.5 8 C10.7 8 12 9.6 12 12 Z"/><path d="M12 11 C15 11 16 9 15.5 7 C13.3 7 12 8.6 12 11 Z"/></svg>',
+  r4:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3 V6.5 M9 3 V6.5 M10 3 V6.5"/><path d="M8 6.5 H10"/><path d="M9 6.5 V21"/><path d="M15 3 C16.8 4 16.8 8 15 9.5 Z"/><path d="M15 9.5 V21"/></svg>',
+  r5:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="15" r="4"/><circle cx="9" cy="15" r="1.5"/><path d="M13.5 11 L21 3"/></svg>',
+  r6:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6 C9.5 4.5 6 4.5 4 5.5 V18 C6 17 9.5 17 12 18.5 C14.5 17 18 17 20 18 V5.5 C18 4.5 14.5 4.5 12 6 Z"/><path d="M12 6 V18.5"/></svg>',
+  r7:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13 V9 a3 3 0 0 1 3 -3 H17 a3 3 0 0 1 3 3 V13"/><path d="M3 13 H21 V16 H3 Z"/><path d="M5 16 V19 M19 16 V19"/></svg>',
+  r8:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21 V9 a7 7 0 0 1 14 0 V21"/><path d="M12 3.2 V21"/><path d="M9.6 12.5 V14.3 M14.4 12.5 V14.3"/><path d="M3 21 H21"/></svg>',
+  r9:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4 C16 7 11 13 7 18"/><path d="M20 4 C20 8 18 11 13.5 13.5 C13 10 15 6.5 20 4 Z"/><path d="M7 18 L5 20.5"/><path d="M5 21.2 H10.5"/></svg>',
+};
+function symbolMarkup(c, secKey){
+  if(secKey==='suspects') return `<span class="disc${SUS_LIGHT[c.id]?' light':''}" style="background:${SUS_COLORS[c.id]}"></span>`;
+  return `<span class="glyph">${ICONS[c.id]||''}</span>`;
+}
 
 const I18N = {
   de:{ tagline:'Cluedo', turn:'Aktueller Zug', who_asks:'Wer fragt?', suggestion:'Verdacht',
@@ -468,7 +523,7 @@ function renderHead(){
   const tr = document.createElement('tr');
   const corner = document.createElement('th');
   corner.className='corner'; corner.scope='col';
-  corner.textContent = lang==='de' ? 'Karte' : 'Card';
+  corner.setAttribute('aria-label', lang==='de' ? 'Karte' : 'Card');
   tr.appendChild(corner);
   for(const col of cols()){
     const th = document.createElement('th');
@@ -509,7 +564,14 @@ function renderBody(){
     secTr.appendChild(th); frag.appendChild(secTr);
     for(const c of list){
       const tr = document.createElement('tr');
-      const rh = document.createElement('th'); rh.className='card'; rh.scope='row'; rh.textContent = c[lang];
+      if(derived.get(ckey(c.id,ENV))?.v==='has') tr.className='sol';
+      const rh = document.createElement('th'); rh.className='card'; rh.scope='row';
+      const sym = document.createElement('button');
+      sym.className='symbtn'; sym.type='button'; sym.dataset.card=c.id;
+      sym.setAttribute('aria-label', c[lang]); sym.title = c[lang];
+      sym.innerHTML = symbolMarkup(c, secKey);
+      const bubble = document.createElement('span'); bubble.className='reveal'; bubble.textContent = c[lang];
+      rh.append(sym, bubble);
       tr.appendChild(rh);
       for(const col of COLS){
         const td = document.createElement('td');
@@ -537,6 +599,20 @@ tbody.addEventListener('click', e => {
   const {card, col} = btn.dataset;
   toggleFact(card, col===ENV?ENV:Number(col));
 });
+
+/* tap a left-margin symbol → reveal its full name (auto-dismiss). Names stay in
+   aria-label/title, so the grid is still fully usable without the bubble. */
+let revealTimer;
+const closeReveals = () => tbody.querySelectorAll('.reveal.open').forEach(b=>b.classList.remove('open'));
+tbody.addEventListener('click', e => {
+  const sym = e.target.closest('button.symbtn'); if(!sym) return;
+  e.stopPropagation();
+  const bub = sym.parentElement.querySelector('.reveal');
+  const wasOpen = bub.classList.contains('open');
+  closeReveals();
+  if(!wasOpen){ bub.classList.add('open'); clearTimeout(revealTimer); revealTimer = setTimeout(closeReveals, 2500); }
+});
+document.addEventListener('click', e => { if(!e.target.closest('.symbtn')) closeReveals(); });
 
 /* ---------- rail ---------- */
 const picker = document.getElementById('picker');

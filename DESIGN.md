@@ -49,21 +49,29 @@ on first load the app runs offline.
 - **Scale (suggested):** display 34–46px, section header 13px tracked uppercase,
   body 15–16px, card label 12px, grid mark 11px. Tune at build time.
 
-## Color
-- **Approach:** Restrained. One accent (clay); everything else is warm paper and ink.
+## Color (Symbole pivot — 2026-06-09)
+- **Approach:** Restrained, but now two accents with distinct jobs: **navy** (primary)
+  and **gold** (the envelope), on warm off-white paper and warm-black ink. Suspects
+  additionally carry their canonical token colour as **row identity** (see below).
 - **Tokens (light):**
-  - `--paper: #F4EFE6` — warm ivory canvas
-  - `--surface: #FBF8F1` — raised sheet / cells
-  - `--hairline: #DDD4C4` — ledger rules
-  - `--ink: #23211C` — warm near-black; primary text + **your** marks
-  - `--muted: #8A8275` — labels, secondary text, **engine** "chalk" marks
-  - `--clay: #C45B3C` — THE accent: Has marks, Envelope column, verdict, primary actions
-  - `--clay-tint: #F0E3DC` — Envelope column wash, chip backgrounds
-- **Semantic:** Avoid red/green coding. State is carried by **form and pressure**, not
-  hue. Clay is the only saturated color; everything else earns attention by weight.
-- **Dark mode:** Warm dark, not cold black. Invert to a warm near-black paper, lift the
-  ink to ivory, slightly lighten/desaturate the clay. Reference tokens:
-  `--paper:#201E19 --surface:#2A2722 --hairline:#3B372F --ink:#F2EDE3 --muted:#9A9284 --clay:#D6764F --clay-tint:#3A2A22`.
+  - `--paper: #fbfaf6` — off-white canvas
+  - `--surface: #f4f1e9` — sticky headers / symbol column / cell backing
+  - `--hairline: #e6e0d3` — ledger rules
+  - `--ink: #2b2926` — warm near-black; primary text + **your** marks
+  - `--muted: #6f685c` — labels, secondary text, **engine** "chalk" marks
+  - `--navy: #1f3a5f` — THE primary accent: Has marks, "du", verdict, primary actions, live column
+  - `--navy-tint: rgba(31,58,95,.06)` — verdict strip + live-column wash
+  - `--gold: #b08534` — the Envelope (Umschlag) column
+  - `--gold-tint: #f3ebd9` — Envelope column wash
+  - `--good: #3f6b4a` — solved row (envelope holds this card): disc ring + glyph + cell tint
+- **Suspect disc colours (row identity, NOT cell state):** Scarlet `#b23a48`, Mustard
+  `#c8962f`, Green `#4a7a52`, White `#efe9dc` (pale → ring), Plum `#6a4a78`, Peacock `#2f6f8c`.
+- **Semantic:** Cells still avoid red/green coding — **cell state is carried by form**
+  (solid square check vs diagonal strike, ink vs grey), **not hue**. The suspect colours
+  label *which card a row is*; they never encode has/hasn't.
+- **Dark mode:** Warm dark, not cold black. Reference tokens:
+  `--paper:#201E19 --surface:#2A2722 --hairline:#3B372F --ink:#F2EDE3 --muted:#9A9284
+   --navy:#5b8ac4 --navy-tint:rgba(91,138,196,.12) --gold:#caa75a --gold-tint:#332b1d --good:#7faa86`.
 
 ## Cell Encoding (the heart of the product)
 Optimize for the common case (most cells become "hasn't") and make the rare, valuable
@@ -88,10 +96,12 @@ Optimize for the common case (most cells become "hasn't") and make the rare, val
 - **Structure (mobile-first, single column):**
   - Slim top bar: app title (Fraunces) + DE/EN language toggle + new game / menu.
   - Matrix: cards as rows grouped under **Verdächtige / Suspects**, **Waffen / Weapons**,
-    **Räume / Rooms** (serif small-caps section labels). **Sticky left column** (card
-    names, Hanken Grotesk) and **sticky top header** (players + a clay-tinted
-    **Umschlag / Envelope** column). The cell field scrolls under both. Hairline rules
-    between rows like an accounting ledger.
+    **Räume / Rooms** (serif small-caps section labels). **Sticky left column = symbols**
+    (Symbole pivot): suspects = colour discs, weapons & rooms = inked glyphs; **tap a
+    symbol to reveal the full name** (names stay in `aria-label`/`title`, so the rail
+    picker, verdict and screen readers are unaffected). The corner header is blank.
+    **Sticky top header** = players + a gold-tinted **Umschlag / Envelope** column. The
+    cell field scrolls under both. Hairline rules between rows like an accounting ledger.
   - Event log (the source of truth; free undo) lives in a **pull-up sheet** so the table
     view stays clean. Three event types: known card / suggestion+response (mark passers
     AND shower) / fully unrefuted.
@@ -128,6 +138,10 @@ Optimize for the common case (most cells become "hasn't") and make the rare, val
 No purple/violet gradients; no 3-column icon-in-circle grids; no centered-everything; no
 gradient CTA buttons; no uniform bubble radius; no system-ui/-apple-system as display or
 body font; no detective clip-art or magnifying glasses; no red/green cell coding.
+- **Scoped exception (2026-06-09):** functional **category object-glyphs** for weapons &
+  rooms (dagger, candlestick, wrench…) are allowed as left-margin *identity* symbols. This
+  is wayfinding iconography, NOT campy sleuth/magnifier/noir clip-art — the distinction the
+  guardrail protects still holds.
 
 ## Interaction Model (one single view)
 The entire app is **one view** — no navigation, no separate screens. The matrix is
@@ -165,3 +179,7 @@ always present; logging a turn happens on the same surface.
 | 2026-06-08 | Keep Google Fonts CDN; do not inline/self-host fonts | User decision overriding the original embed-for-offline plan. CDN load is cached after first load; true-offline is an accepted trade-off, not a defect. |
 | 2026-06-09 | Conditional "Gezeigte Karte" rail step when you ask and a player shows | You see the exact card, so log it as a hard fact (stronger than the shower one-of-three). The step only appears for seat-0 asks with a real shower; the rail stays three steps otherwise. |
 | 2026-06-09 | Contradictions live in the verdict strip, not just a toast | A deduction instrument's core value is catching the impossible; a fading toast (and none on reload) let garbage deductions read as fact. The strip carries it persistently. |
+| 2026-06-09 | **Symbole pivot**: new palette (off-white/navy/gold) + symbol left margin | Implemented from the Claude Design "Cluedo Notebook — Symbole" handoff. Suspects = colour discs, weapons/rooms = inked glyphs with tap-to-reveal names. Supersedes the clay-on-ivory palette; cells still encode state by form, not hue. |
+| 2026-06-09 | Kept Fraunces + Hanken Grotesk + JetBrains Mono after a `/design-shotgun` font run | Explored Futura/Jost (official-Cluedo branding) and Newsreader (the mock's serif) against the original three-font system; the original read best on the symbol ledger. |
+| 2026-06-09 | Weapon glyphs from game-icons.net (CC BY 3.0) | Hand-drawn weapon SVGs were weak; swapped 5 for real vectors (Lorc & Delapouite: sacrificial-dagger, monkey-wrench, revolver, rope-coil, lead-pipe) + a photo-matched candlestick. Attribution comment in index.html. |
+| 2026-06-09 | Suspect colour = row identity, not cell state | Keeps "state by form, not hue" intact for cells; the disc only says which card the row is. |
