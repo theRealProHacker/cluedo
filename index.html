@@ -623,6 +623,9 @@ commitBtn.addEventListener('click', commitSuggestion);
 /* ---------- verdict ---------- */
 const verdictEl = document.getElementById('verdict-text');
 function renderVerdict(){
+  // a contradiction makes every deduction below suspect — surface it persistently,
+  // not just in the toast that fades (and never fires on reload).
+  if(contradiction){ verdictEl.innerHTML = `<b>${t('contradiction')}</b>`; return; }
   const find = list => list.find(c => derived.get(ckey(c.id,ENV))?.v==='has');
   const s=find(CARDS.suspects), w=find(CARDS.weapons), r=find(CARDS.rooms);
   if(!s && !w && !r){ verdictEl.textContent = t('empty_verdict'); return; }
