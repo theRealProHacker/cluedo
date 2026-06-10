@@ -24,6 +24,10 @@ and what's left in the envelope.
 - **You saw the card.** When *you* (seat 0) ask and a real player shows, you pick which
   of the three cards you were shown; that's logged as a hard fact, stronger than the
   "holds one of three" you get from watching other players' turns.
+- **Setup before play.** A game opens in a short setup: tap your own hand, and — when the
+  deal is uneven (e.g. 4 or 5 players) — tap which seats hold the extra card so hand sizes
+  match your group's real deal. Opponent cells stay locked until you tap **Start**, which
+  only enables once your hand is fully entered and the deal sums to the 18 dealt cards.
 - **Contradictions surface.** If the log implies an impossible state (a card in two hands,
   a hand that can't be filled), the verdict strip says so until you fix it.
 
@@ -33,7 +37,8 @@ It's a single self-contained HTML file with zero build step. Open `index.html` i
 modern browser, or use the live link above. State persists in `localStorage`, so it
 survives a reload. Works offline once loaded (fonts come from Google Fonts on first load).
 
-Set the player count (2–6) in the log sheet; seat 0 is you.
+On first run you'll land in setup: enter your hand and tap **Start**. Player count (2–6),
+the starter, and the deal (who holds the extra card) live in the log sheet; seat 0 is you.
 
 ## Design
 
