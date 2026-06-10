@@ -599,8 +599,12 @@ function renderHead(){
     if(col===ENV){ th.textContent = t('env'); th.setAttribute('aria-label', t('envelope')); }
     else {
       const known = knownCardsFor(col), total = sizes[col];
-      th.innerHTML = `${col}<span class="role">${col===0?t('you'):''}</span><span class="tally" aria-hidden="true">${known}/${total}</span>`;
-      th.setAttribute('aria-label', t('player')+' '+col+(col===0?' ('+t('you')+')':'')+` ${known}/${total}`);
+      // seat 0 is you: the role label "du" owns that slot and the tally is always your
+      // full hand, so the count is dropped here (it would crowd the column and misalign
+      // the tally baseline against the other seats). Opponents keep their known/total.
+      const tally = col===0 ? '' : `<span class="tally" aria-hidden="true">${known}/${total}</span>`;
+      th.innerHTML = `${col}<span class="role">${col===0?t('you'):''}</span>${tally}`;
+      th.setAttribute('aria-label', t('player')+' '+col+(col===0?' ('+t('you')+')':` ${known}/${total}`));
     }
     tr.appendChild(th);
   }
