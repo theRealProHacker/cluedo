@@ -855,6 +855,7 @@ function renderLog(){
 }
 function renderMyCards(){
   const max = handSizes()[0];
+  const known0 = knownCardsFor(0);
   const selected = new Set(
     state.events.filter(isMyCard).map(e => e.card)
   );
@@ -869,7 +870,7 @@ function renderMyCards(){
     for(const c of list){
       const sel = selected.has(c.id);
       const btn = symChip(c, sel, () => toggleMyCard(c.id));
-      if(!sel && selected.size >= max) btn.style.opacity = '0.45';
+      if(!sel && known0 >= max) btn.style.opacity = '0.45';
       row.appendChild(btn);
     }
     cardPickerWrap.appendChild(row);
