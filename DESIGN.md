@@ -169,6 +169,28 @@ always present; logging a turn happens on the same surface.
 - **Direct cell tap** remains available for marking a known card (cycle unknown → has →
   hasn't) without opening the rail.
 
+## Deal & Hand Sizes (behavioral)
+The deck is 21 cards; 3 go to the Envelope, so **18 are dealt**. With N players,
+each hand is `base = floor(18/N)` and the `rem = 18 mod N` leftover cards make some
+hands one larger. Hand sizes are a hard engine constraint (each seat holds exactly
+its dealt count), so they must always sum to 18.
+- **Who gets the extra is a manual, deal-time choice.** A setup-phase control
+  ("Karten / Cards", shown only when `rem != 0`) lets you tap which `rem` seats hold
+  the +1. `base` is fixed, so the assignment can never produce an impossible total.
+  Stored as `handExtras` (a set of seats); defaults to the prior rule (last seats in
+  turn order) so untouched games are unchanged.
+- **`starter` and `handExtras` are separate concerns.** `starter` drives turn order
+  and the asker preselect; `handExtras` drives hand sizes. They were tangled before
+  (hand sizes derived from `starter`); the manual control decouples them.
+- **Availability:** primary home is the setup phase, beside player-count and starter.
+  It remains adjustable from the pull-up setup sheet after the board locks (a
+  structural control, not on the locked grid); editing it recomputes but does not
+  wipe the log. Changing it mid-game is allowed but deliberately one level out of the
+  way, because it rewrites the hand-size constraint.
+- **Balance note:** the default already gives the first player (the starter) the
+  smaller hand; the manual control adds transparency and lets you match your group's
+  actual deal rather than the app's assumed distribution.
+
 ## Decisions Log
 | Date | Decision | Rationale |
 |------|----------|-----------|
@@ -189,3 +211,4 @@ always present; logging a turn happens on the same surface.
 | 2026-06-09 | Suspect colour = row identity, not cell state | Keeps "state by form, not hue" intact for cells; the disc only says which card the row is. |
 | 2026-06-09 | Manual dark-mode switch (sun/moon) in the top bar | Dark mode was system-only; added an explicit light/dark toggle that overrides `prefers-color-scheme`, persisted to localStorage. Defaults to following the system until first toggle. |
 | 2026-06-09 | Turn rail adopts the Symbole language (pick by disc/glyph, not text) | The "Aktueller Zug" picker dumped 6–9 wide text-name chips (3 rows, ~264px) — crowded and inconsistent with the symbol grid. Suggestion/seen chips are now compact 44px disc/glyph chips (suspects 1 row, rooms 2), and the chosen suggestion shows as mini symbols in the step (no truncation). Names stay in aria-label/title. |
+| 2026-06-10 | Manual hand-size control via "assign the extras" toggle, setup-phase only | Standard deck makes every hand `base` or `base+1`, so the only choice is which `rem` seats hold the extra; a tap-to-toggle row sums to 18 by construction (no validation surface). Decouples `handExtras` from `starter`. Replaces blind reliance on the assumed deal distribution (which may not match the group's real deal) with explicit control. See "Deal & Hand Sizes (behavioral)". |
