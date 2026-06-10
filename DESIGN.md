@@ -180,8 +180,10 @@ its dealt count), so they must always sum to 18.
   when exactly `rem` extras are assigned** (`|handExtras| === rem`). The editor keeps
   exactly `rem` selected and the setup gate refuses to start until it holds, so the
   engine never sees a deal that sums to anything but 18. Stored as `handExtras` (a set
-  of seats); defaults to the prior rule (last seats in turn order) so untouched games
-  are unchanged.
+  of seats); the default seeds the extras to the **first `rem` seats in turn order**
+  (the starter and the next) — modelling a clockwise deal from the dealer's left, where
+  the first-dealt seats receive the leftover cards. Fully overridable in the editor, so
+  the seed only matters for an untouched game.
 - **`starter` and `handExtras` are separate concerns.** `starter` drives turn order
   and the asker preselect; `handExtras` drives hand sizes. They were tangled before
   (hand sizes derived from `starter`); the manual control decouples them.
@@ -190,8 +192,9 @@ its dealt count), so they must always sum to 18.
   structural control, not on the locked grid); editing it recomputes but does not
   wipe the log. Changing it mid-game is allowed but deliberately one level out of the
   way, because it rewrites the hand-size constraint.
-- **Balance note:** the default already gives the first player (the starter) the
-  smaller hand; the manual control adds transparency and lets you match your group's
+- **Balance note:** the default gives the starter (and the next `rem-1` seats) the
+  *larger* hand, since in a clockwise deal the dealer's left — typically the starter —
+  is dealt first. The manual control adds transparency and lets you match your group's
   actual deal rather than the app's assumed distribution.
 
 ## Setup Phase (behavioral)
@@ -237,3 +240,4 @@ then lock to the turn rail, corrections via the event-log sheet.
 | 2026-06-09 | Turn rail adopts the Symbole language (pick by disc/glyph, not text) | The "Aktueller Zug" picker dumped 6–9 wide text-name chips (3 rows, ~264px) — crowded and inconsistent with the symbol grid. Suggestion/seen chips are now compact 44px disc/glyph chips (suspects 1 row, rooms 2), and the chosen suggestion shows as mini symbols in the step (no truncation). Names stay in aria-label/title. |
 | 2026-06-10 | Manual hand-size control via "assign the extras" toggle, setup-phase only | Standard deck makes every hand `base` or `base+1`, so the only choice is which `rem` seats hold the extra. The editor keeps exactly `rem` assigned and the setup gate enforces `|handExtras| === rem`, so the deal always sums to 18 (corrected from the earlier "by construction" claim — it sums to 18 only when the assignment is complete). Decouples `handExtras` from `starter`. Replaces blind reliance on the assumed deal distribution with explicit control. See "Deal & Hand Sizes (behavioral)". |
 | 2026-06-10 | Setup ends by explicit Submit, gated on (deal sums to 18) AND (your hand fully entered) | /autoplan eng review found the "purely derived" gate (`inSetup` from `knownCardsFor`) closes the picker early (engine auto-completes the hand) and can trap a user whose real hand is smaller than the assumed size. One explicit gate on the two invariants guarantees the engine starts consistent and removes the whole setup-bug class. Supersedes the derived-gate design. See "Setup Phase (behavioral)". |
+| 2026-06-11 | Implemented setup phase, `handExtras`, default extras → first `rem` seats, asker preselect | Built the designed setup phase: a `setupDone` event + two-invariant Submit gate, a `handExtras` deal editor (rail during setup, sheet post-lock, keeps ≤`rem`), and opponent/envelope cells locked until Submit. Flipped the deal-default seed from the *last* `rem` seats to the **first** (the starter is usually dealt first in a clockwise deal, so holds the extra) — overridable, so it only seeds untouched games. Added asker preselect: the seat after the last suggestion's asker (starter on turn 1), set only when no asker is chosen. |
