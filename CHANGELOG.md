@@ -21,12 +21,6 @@ This is a single self-contained `index.html`; "the app" means that file.
 - **Asker preselect.** The turn rail preselects the next asker (the seat after the
   last suggestion's asker, or the starter on turn 1), only when no asker is chosen.
 
-### Changed
-- **Deal default seeds the extras to the first `rem` seats in turn order** (the
-  starter and the next), modelling a clockwise deal from the dealer's left where the
-  first-dealt seats hold the leftover cards — so the starter now holds the *larger*
-  hand. Fully overridable in the deal editor; the seed only affects untouched games.
-
 ### Fixed
 - The `[hidden]` attribute was overridden by `display:flex`/`display:grid` rules
   (`.steps`, `.picker`, `.setupbar`, `.setup` rows), so the turn rail and setup bar

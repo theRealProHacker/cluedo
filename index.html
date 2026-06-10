@@ -438,11 +438,12 @@ const ckey = (cardId, col) => `${cardId}|${col}`;
    the `rem` leftover cards make some hands one larger. WHICH seats hold the extra is
    stored in `state.handExtras` (a set of seats), so hand sizes are decoupled from the
    starter and can be matched to your group's real deal. The default seeds the extras to
-   the first `rem` seats in turn order (the starter and the next — i.e. dealt first). */
+   the last `rem` seats in turn order (the prior rule, pending a real-deal check);
+   override it per game in the deal editor. */
 const DEALT = 18;
 function defaultExtras(){
   const N = state.players, rem = DEALT % N, set = new Set();
-  for(let i=0;i<rem;i++) set.add((state.starter+i)%N);
+  for(let i=N-rem;i<N;i++) set.add((state.starter+i)%N);
   return set;
 }
 function handSizes(){
