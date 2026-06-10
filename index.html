@@ -28,6 +28,9 @@
     --paper:#201E19; --surface:#2A2722; --hairline:#3B372F; --ink:#F2EDE3; --muted:#9A9284;
     --navy:#5b8ac4; --navy-tint:rgba(91,138,196,.12); --gold:#caa75a; --gold-tint:#332b1d; --good:#7faa86; }
   *{box-sizing:border-box}
+  /* the [hidden] attribute must win over our display:flex/grid rules (.steps,
+     .picker, .setupbar, .setup rows all set an explicit display) */
+  [hidden]{display:none!important}
   html,body{margin:0;height:100%}
   body{
     background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.5;
@@ -73,6 +76,15 @@
   .step[aria-current="step"] small{color:var(--navy)}
   .ok{border:0;border-radius:9px;background:var(--navy);color:#FBF8F1;font-family:var(--sans);font-weight:700;font-size:13px;padding:0 16px;min-height:var(--hit);cursor:pointer}
   .ok:disabled{opacity:.4;cursor:not-allowed}
+  /* setup phase: the rail hosts hand entry + the deal until you Submit */
+  .setupbar{display:flex;flex-direction:column;gap:7px}
+  .setup-hint{margin:2px 0 0;font-size:12px;font-style:italic;font-family:var(--serif);color:var(--muted)}
+  .setupbar .setup-count{display:flex;align-items:baseline;justify-content:space-between;margin-top:2px}
+  .setupbar .setup-count .lbl{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .setupbar #rail-mycount{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--muted)}
+  .card-picker.railpick{padding:0;border:0}
+  .card-picker.railpick .grp{margin:2px 0 4px}
+  .setupbar .ok{margin-top:2px}
   .picker{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:9px}
   .picker .grp{width:100%;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:2px 0 -2px}
   .chip{min-width:var(--hit);height:var(--hit);padding:0 6px;display:inline-flex;align-items:center;justify-content:center;border-radius:11px;border:1px solid var(--hairline);background:var(--paper);color:var(--ink);cursor:pointer;font-family:var(--mono);font-weight:700;font-size:15px}
@@ -126,6 +138,9 @@
   .mark-hasnt.eng::after{background:var(--muted);opacity:.6}
   td.cellwrap.bad{background:rgba(31,58,95,.18);box-shadow:inset 0 0 0 1px var(--navy)}
   button.cell:focus-visible{outline:2px solid var(--navy);outline-offset:-3px;border-radius:6px}
+  /* setup phase: opponent + envelope cells are locked until you Submit your hand */
+  td.cellwrap.setupdim{opacity:.34}
+  button.cell:disabled{cursor:default}
 
   /* symbol left margin (Symbole): suspects = colour discs, weapons/rooms = inked glyphs.
      Tap a symbol to reveal the full card name. */
@@ -230,6 +245,13 @@
       <button class="ok" id="commit" disabled data-i18n="ok">OK</button>
     </div>
     <div class="picker" id="picker" aria-label="Auswahl"></div>
+    <div class="setupbar" id="setupbar" hidden>
+      <p class="setup-hint" id="setup-hint" data-i18n="setup_hint">Setup</p>
+      <div class="card-picker railpick" id="rail-extras" hidden></div>
+      <div class="setup-count"><span class="lbl" data-i18n="my_cards">Meine Karten</span><span id="rail-mycount"></span></div>
+      <div class="card-picker railpick" id="rail-mycards"></div>
+      <button class="ok" id="submit" disabled data-i18n="submit">Loslegen</button>
+    </div>
   </section>
 
   <main class="matrix">
@@ -260,6 +282,10 @@
   <div class="setup" id="setup-starter" hidden>
     <span class="lbl" data-i18n="starter">Startspieler</span>
     <div class="pchips" id="schips"></div>
+  </div>
+  <div class="setup" id="setup-extras" hidden>
+    <span class="lbl" data-i18n="deal_extra">Extra-Karte</span>
+    <div class="pchips" id="xchips"></div>
   </div>
   <div class="setup" id="setup-mycards">
     <span class="lbl" data-i18n="my_cards">Meine Karten</span>
@@ -360,7 +386,9 @@ const I18N = {
        contradiction:'Widerspruch — prüfe den Verlauf', solved:'Gelöst!',
        has:'hat', hasnt:'hat nicht', shows:'zeigt', nobody_shows:'niemand zeigt',
        player:'Spieler', envelope:'Umschlag',
-       to_dark:'Dunkelmodus', to_light:'Hellmodus', my_cards:'Meine Karten' },
+       to_dark:'Dunkelmodus', to_light:'Hellmodus', my_cards:'Meine Karten',
+       setup_hint:'Setup — tippe deine Karten, dann „Loslegen".', submit:'Loslegen',
+       deal_extra:'Extra-Karte', setup_done:'Setup abgeschlossen', max_cards:'Max.' },
   en:{ tagline:'Cluedo', turn:'Current turn', who_asks:'Who asked?', suggestion:'Suggestion',
        who_shows:'Who showed?', ok:'OK', nobody:'nobody', you:'you', env:'Env',
        suspects:'Suspects', weapons:'Weapons', rooms:'Rooms',
@@ -373,12 +401,14 @@ const I18N = {
        contradiction:'Contradiction — check the log', solved:'Solved!',
        has:'has', hasnt:"hasn't", shows:'shows', nobody_shows:'nobody shows',
        player:'Player', envelope:'Envelope',
-       to_dark:'Dark mode', to_light:'Light mode', my_cards:'My cards' },
+       to_dark:'Dark mode', to_light:'Light mode', my_cards:'My cards',
+       setup_hint:'Setup — tap your hand, then “Start".', submit:'Start',
+       deal_extra:'Extra card', setup_done:'Setup complete', max_cards:'Max.' },
 };
 
 /* ---------- persistent state (the source of truth) ---------- */
 const STORE_KEY = 'indizien.v1';
-let state = { players:4, lang:'de', starter:0, theme:null, events:[] };
+let state = { players:4, lang:'de', starter:0, theme:null, events:[], handExtras:null };
 function load(){
   try{
     const raw = localStorage.getItem(STORE_KEY);
@@ -388,8 +418,12 @@ function load(){
       state.starter = Math.min(state.players-1, Math.max(0, s.starter|0));
       state.theme = (s.theme==='light' || s.theme==='dark') ? s.theme : null;
       state.events = Array.isArray(s.events) ? s.events : [];
+      state.handExtras = Array.isArray(s.handExtras)
+        ? s.handExtras.filter(n => Number.isInteger(n) && n>=0 && n<state.players)
+        : null;
     }}
   }catch{ /* corrupt store — start clean */ }
+  if(!Array.isArray(state.handExtras)) state.handExtras = [...defaultExtras()];   // seed the deal default
 }
 function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch{} }
 
@@ -400,13 +434,21 @@ const seats = () => Array.from({length: state.players}, (_,i)=>i);
 const cols  = () => [...seats(), ENV];
 const ckey = (cardId, col) => `${cardId}|${col}`;
 
-/* hands: 21 cards − 3 in the envelope = 18 dealt. Players earlier in turn order
-   (from the starter, clockwise) are dealt one fewer; the last `rem` seats get the
-   extra card. So each seat's hand size is exact once we know who started. */
+/* hands: 21 cards − 3 in the envelope = 18 dealt. Every hand is `base` or `base+1`;
+   the `rem` leftover cards make some hands one larger. WHICH seats hold the extra is
+   stored in `state.handExtras` (a set of seats), so hand sizes are decoupled from the
+   starter and can be matched to your group's real deal. The default seeds the extras to
+   the first `rem` seats in turn order (the starter and the next — i.e. dealt first). */
 const DEALT = 18;
+function defaultExtras(){
+  const N = state.players, rem = DEALT % N, set = new Set();
+  for(let i=0;i<rem;i++) set.add((state.starter+i)%N);
+  return set;
+}
 function handSizes(){
-  const N = state.players, base = Math.floor(DEALT/N), rem = DEALT % N, size = {};
-  for(let i=0;i<N;i++) size[(state.starter+i)%N] = base + (i >= N-rem ? 1 : 0);
+  const N = state.players, base = Math.floor(DEALT/N), size = {};
+  const extras = new Set(state.handExtras);
+  for(let i=0;i<N;i++) size[i] = base + (extras.has(i) ? 1 : 0);
   return size;
 }
 const isMyCard = e => e.type==='fact' && e.holder===0 && e.value==='has';
@@ -415,6 +457,19 @@ function knownCardsFor(player){
   for(const c of ALL_CARDS)
     if(derived.get(ckey(c.id, player))?.v === 'has') count++;
   return count;
+}
+
+/* setup phase: the board stays in setup until you explicitly Submit, recorded as a
+   `setupDone` event (so re-entering setup is just an undo). Submit is gated on two
+   invariants — the deal sums to 18 (exactly `rem` extras assigned) AND your hand is
+   fully entered (manual `has` facts equal your dealt count; counting manual facts, not
+   the derived total, keeps the gate immune to engine auto-completion). */
+const inSetup = () => !state.events.some(e => e.type==='setupDone');
+function setupReady(){
+  const rem = DEALT % state.players;
+  const extrasOk = new Set(state.handExtras).size === rem;
+  const handOk = state.events.filter(isMyCard).length === handSizes()[0];
+  return extrasOk && handOk;
 }
 
 /* ---------- deduction engine ---------- */
@@ -518,6 +573,7 @@ function recompute(originKey, animate){
 
 function toggleFact(card, holder){
   // tap cycles unknown -> has -> hasn't -> unknown (per DESIGN.md), edited via the log
+  if(inSetup() && !sameHolder(holder, 0)) return;   // only your own hand is editable in setup
   const existing = state.events.find(e => e.type==='fact' && e.card===card && sameHolder(e.holder,holder));
   const cur = existing ? existing.value : 'unknown';
   const next = {unknown:'has', has:'hasnt', hasnt:'unknown'}[cur];
@@ -534,16 +590,34 @@ function commitSuggestion(){
   if(needsSeen() && turn.cards.includes(turn.seen)){
     state.events.push({ type:'fact', card:turn.seen, holder:turn.shower, value:'has' });
   }
-  turn = { asker:null, cards:[null,null,null], shower:null, seen:null };
+  turn = freshTurn(); preselectAsker();
   activeStep = 'asker';
   recompute(null, true);
   showToast(t('logged'));
 }
 
+/* leave setup: record completion as an event (event-log-stays-source-of-truth), then
+   open the first turn with the starter preselected as asker. */
+function submitSetup(){
+  if(!setupReady()) return;
+  state.events.push({ type:'setupDone' });
+  turn = freshTurn(); preselectAsker(); activeStep='asker';
+  recompute(null, true); renderLog();
+  showToast(t('setup_done'));
+}
+function toggleExtra(seat){
+  const set = new Set(state.handExtras), rem = DEALT % state.players;
+  if(set.has(seat)) set.delete(seat);
+  else if(set.size >= rem){ showToast(`${t('max_cards')} ${rem}`, true); return; }   // keep at most `rem`
+  else set.add(seat);
+  state.handExtras = [...set];
+  recompute(null, true); renderLog();
+}
+
 function removeEvent(ev){ state.events = state.events.filter(e=>e!==ev); recompute(null, true); renderLog(); }
 function undoLast(){ if(state.events.length){ state.events.pop(); recompute(null, true); renderLog(); } }
-function newGame(players){ state.players = players; if(state.starter>=players) state.starter=0; state.events = []; turn = { asker:null, cards:[null,null,null], shower:null, seen:null }; activeStep='asker'; recompute(null, false); renderLog(); }
-function setStarter(s){ if(s===state.starter) return; state.starter = s; recompute(null, true); renderLog(); }
+function newGame(players){ state.players = players; if(state.starter>=players) state.starter=0; state.handExtras=[...defaultExtras()]; state.events = []; turn = freshTurn(); activeStep='asker'; recompute(null, false); renderLog(); }
+function setStarter(s){ if(s===state.starter) return; state.starter = s; state.handExtras=[...defaultExtras()]; recompute(null, true); renderLog(); }
 function toggleMyCard(cardId){
   const idx = state.events.findIndex(e => isMyCard(e) && e.card===cardId);
   if(idx !== -1){
@@ -559,8 +633,16 @@ function toggleMyCard(cardId){
 }
 
 /* ---------- turn (rail) draft ---------- */
-let turn = { asker:null, cards:[null,null,null], shower:null, seen:null };
+const freshTurn = () => ({ asker:null, cards:[null,null,null], shower:null, seen:null });
+let turn = freshTurn();
 let activeStep = 'asker';
+// the asker rotates clockwise: preselect the seat after the last suggestion's asker
+// (or the starter for the first turn), but only when no asker is chosen yet.
+function preselectAsker(){
+  if(turn.asker!=null) return;
+  const sugs = state.events.filter(e => e.type==='suggestion');
+  turn.asker = sugs.length ? (sugs[sugs.length-1].asker + 1) % state.players : state.starter;
+}
 // when YOU (seat 0) ask and a real player shows, you see the exact card — a hard fact,
 // not the weak "one of three" the other players' turns give you.
 const needsSeen = () => turn.asker===0 && turn.shower!=null && turn.shower!=='nobody';
@@ -627,6 +709,7 @@ function stateWord(v, manual){
 
 function renderBody(){
   const COLS = cols();
+  const setup = inSetup();
   const frag = document.createDocumentFragment();
   for(const [secKey, list] of SECTIONS){
     const secTr = document.createElement('tr'); secTr.className='sec';
@@ -645,12 +728,13 @@ function renderBody(){
       rh.append(sym, bubble);
       tr.appendChild(rh);
       for(const col of COLS){
+        const locked = setup && col!==0;   // only your own column is editable in setup
         const td = document.createElement('td');
-        td.className = 'cellwrap' + (col===ENV?' env':'') + (turn.shower===col && col!==ENV?' hotcol':'');
+        td.className = 'cellwrap' + (col===ENV?' env':'') + (turn.shower===col && col!==ENV?' hotcol':'') + (locked?' setupdim':'');
         const d = derived.get(ckey(c.id,col));
         const v = d ? d.v : 'unknown', manual = d ? d.manual : false;
         const btn = document.createElement('button');
-        btn.className='cell'; btn.type='button';
+        btn.className='cell'; btn.type='button'; btn.disabled = locked;
         btn.dataset.card=c.id; btn.dataset.col=col;
         btn.innerHTML = markFor(v, manual);
         const k = ckey(c.id,col);
@@ -690,7 +774,13 @@ const picker = document.getElementById('picker');
 const commitBtn = document.getElementById('commit');
 function setActive(step){ activeStep = step; renderRail(); renderPicker(); }
 
+const stepsEl = document.querySelector('.steps');
+const setupbar = document.getElementById('setupbar');
+const submitBtn = document.getElementById('submit');
 function renderRail(){
+  const setup = inSetup();
+  stepsEl.hidden = setup; picker.hidden = setup; setupbar.hidden = !setup;
+  if(setup){ renderSetupbar(); renderHead(); refreshHotCols(); return; }
   document.querySelectorAll('.steps .step').forEach(s=>{
     const step = s.dataset.step;
     const current = step===activeStep || (step==='shower' && activeStep==='seen');
@@ -755,6 +845,7 @@ function playerChip(seat, pressed, on, total){
   return b;
 }
 function renderPicker(){
+  if(inSetup()) return;   // setup owns the rail; the turn picker is dormant
   picker.replaceChildren();
   if(activeStep==='seen'){ // which of the 3 suggested cards you were shown
     const g=document.createElement('span'); g.className='grp'; g.textContent=t('pick_shown'); picker.appendChild(g);
@@ -791,6 +882,7 @@ function renderPicker(){
 }
 document.querySelectorAll('.steps .step').forEach(s=> s.addEventListener('click', ()=> setActive(s.dataset.step)));
 commitBtn.addEventListener('click', commitSuggestion);
+submitBtn.addEventListener('click', submitSetup);
 
 /* ---------- verdict ---------- */
 const verdictEl = document.getElementById('verdict-text');
@@ -798,6 +890,7 @@ function renderVerdict(){
   // a contradiction makes every deduction below suspect — surface it persistently,
   // not just in the toast that fades (and never fires on reload).
   if(contradiction){ verdictEl.innerHTML = `<b>${t('contradiction')}</b>`; return; }
+  if(inSetup()){ verdictEl.textContent = t('setup_hint'); return; }
   const find = list => list.find(c => derived.get(ckey(c.id,ENV))?.v==='has');
   const s=find(CARDS.suspects), w=find(CARDS.weapons), r=find(CARDS.rooms);
   if(!s && !w && !r){ verdictEl.textContent = t('empty_verdict'); return; }
@@ -819,9 +912,13 @@ const setupStarter = document.getElementById('setup-starter');
 const logcount = document.getElementById('logcount');
 const cardPickerWrap = document.getElementById('card-picker-wrap');
 const myCardsCount   = document.getElementById('mycards-count');
+const xchips         = document.getElementById('xchips');
+const setupExtras    = document.getElementById('setup-extras');
+const setupMycards   = document.getElementById('setup-mycards');
 
 function evSummary(ev){
   const who = h => h===ENV ? t('envelope') : t('player')+' '+h;
+  if(ev.type==='setupDone') return `<span class="k">— ${t('setup_done')} —</span>`;
   if(ev.type==='fact'){
     return `${who(ev.holder)} <span class="k">${t(ev.value)}</span> ${cardName(ev.card)}`;
   }
@@ -840,6 +937,12 @@ function renderLog(){
   setupStarter.hidden = !uneven;
   schips.replaceChildren();
   if(uneven) for(const s of seats()) schips.appendChild(chip(String(s), s===state.starter, ()=>setStarter(s)));
+  // the deal: which seats hold the extra card (structural — also adjustable post-lock)
+  setupExtras.hidden = !uneven;
+  if(uneven) buildExtraChips(xchips);
+  // your hand lives in the rail during setup; the sheet copy is for post-lock corrections
+  const setup = inSetup();
+  setupMycards.hidden = setup; cardPickerWrap.hidden = setup;
   // event list (newest first)
   eventlist.replaceChildren();
   if(!state.events.length){
@@ -857,18 +960,16 @@ function renderLog(){
   undoBtn.disabled = !state.events.length;
   renderMyCards();
 }
-function renderMyCards(){
+function buildMyCards(wrap, countEl){
   const max = handSizes()[0];
   const known0 = knownCardsFor(0);
-  const selected = new Set(
-    state.events.filter(isMyCard).map(e => e.card)
-  );
-  myCardsCount.textContent = `${selected.size} ${t('of')} ${max}`;
-  cardPickerWrap.replaceChildren();
+  const selected = new Set(state.events.filter(isMyCard).map(e => e.card));
+  if(countEl) countEl.textContent = `${selected.size} ${t('of')} ${max}`;
+  wrap.replaceChildren();
   for(const [secKey, list] of SECTIONS){
     const grp = document.createElement('span');
     grp.className = 'grp'; grp.textContent = t(secKey);
-    cardPickerWrap.appendChild(grp);
+    wrap.appendChild(grp);
     const row = document.createElement('div');
     row.className = 'chips-row';
     for(const c of list){
@@ -877,8 +978,36 @@ function renderMyCards(){
       if(!sel && known0 >= max) btn.style.opacity = '0.45';
       row.appendChild(btn);
     }
-    cardPickerWrap.appendChild(row);
+    wrap.appendChild(row);
   }
+}
+function renderMyCards(){ buildMyCards(cardPickerWrap, myCardsCount); }
+// the deal editor: tap the `rem` seats that hold the extra card. Keeps at most `rem`
+// selected (excess chips dim); the setup gate then requires exactly `rem`.
+function buildExtraChips(rowEl){
+  const rem = DEALT % state.players, extras = new Set(state.handExtras);
+  rowEl.replaceChildren();
+  for(const s of seats()){
+    const sel = extras.has(s);
+    const b = chip(String(s), sel, () => toggleExtra(s));
+    if(!sel && extras.size >= rem) b.style.opacity = '0.45';
+    rowEl.appendChild(b);
+  }
+}
+function renderSetupbar(){
+  const rem = DEALT % state.players;
+  const railExtras = document.getElementById('rail-extras');
+  railExtras.hidden = rem === 0;
+  if(rem !== 0){
+    railExtras.replaceChildren();
+    const g = document.createElement('span'); g.className = 'grp';
+    g.textContent = `${t('deal_extra')} · ${rem}`;
+    const row = document.createElement('div'); row.className = 'chips-row';
+    buildExtraChips(row);
+    railExtras.append(g, row);
+  }
+  buildMyCards(document.getElementById('rail-mycards'), document.getElementById('rail-mycount'));
+  submitBtn.disabled = !setupReady();
 }
 function updateLogCount(){
   const n = state.events.length;
@@ -945,6 +1074,7 @@ lang = state.lang;
 applyTheme();
 applyI18n();
 deriveAll(); prevSnapshot = new Map([...derived].map(([k,o])=>[k,o.v]));
+if(!inSetup()) preselectAsker();
 renderHead(); renderPicker(); render();
 document.fonts.ready.then(()=>{ renderHead(); render(); });
 </script>
