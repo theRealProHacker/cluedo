@@ -176,9 +176,12 @@ hands one larger. Hand sizes are a hard engine constraint (each seat holds exact
 its dealt count), so they must always sum to 18.
 - **Who gets the extra is a manual, deal-time choice.** A setup-phase control
   ("Karten / Cards", shown only when `rem != 0`) lets you tap which `rem` seats hold
-  the +1. `base` is fixed, so the assignment can never produce an impossible total.
-  Stored as `handExtras` (a set of seats); defaults to the prior rule (last seats in
-  turn order) so untouched games are unchanged.
+  the +1. `base` is fixed, so `sum = N*base + |handExtras|`, which equals 18 **only
+  when exactly `rem` extras are assigned** (`|handExtras| === rem`). The editor keeps
+  exactly `rem` selected and the setup gate refuses to start until it holds, so the
+  engine never sees a deal that sums to anything but 18. Stored as `handExtras` (a set
+  of seats); defaults to the prior rule (last seats in turn order) so untouched games
+  are unchanged.
 - **`starter` and `handExtras` are separate concerns.** `starter` drives turn order
   and the asker preselect; `handExtras` drives hand sizes. They were tangled before
   (hand sizes derived from `starter`); the manual control decouples them.
@@ -190,6 +193,27 @@ its dealt count), so they must always sum to 18.
 - **Balance note:** the default already gives the first player (the starter) the
   smaller hand; the manual control adds transparency and lets you match your group's
   actual deal rather than the app's assumed distribution.
+
+## Setup Phase (behavioral)
+The game opens in a **setup phase**: a my-cards picker (tap your hand) sits where the
+turn rail goes, opponent cells are dimmed and disabled with a hint, and the deal is
+specified (`handExtras`, see above). Setup ends **only by an explicit Submit**, never
+inferred from card counts. Submit is enabled only when BOTH invariants hold:
+1. **The deal sums to 18** — all `rem` extras assigned, i.e. `|handExtras| === rem`.
+2. **Your hand is fully entered** — your marked cards equal your dealt count:
+   `state.events.filter(isMyCard).length === handSizes()[0]` (count manual facts, not
+   the derived `knownCardsFor`, so no engine edge case can perturb the gate).
+
+This single gate guarantees the deduction engine starts from a consistent state (hands
+sum to 18, your hand known), which removes the whole class of setup bugs: the picker
+can't close early, you can't be trapped with a hand you can't finish, and the engine
+never sees a sum-≠-18 deal. On Submit, completion is recorded (an event keeps the
+event-log-as-source-of-truth model and makes re-entering setup just an undo); cells
+then lock to the turn rail, corrections via the event-log sheet.
+- **Supersedes** the earlier "purely derived setup gate" idea (`inSetup` from
+  `knownCardsFor(0)`): that derivation closed the picker early because the engine
+  auto-completes your hand, and could trap you if your real hand was smaller than the
+  assumed size. Explicit Submit + the two-invariant gate is the fix.
 
 ## Decisions Log
 | Date | Decision | Rationale |
@@ -211,4 +235,5 @@ its dealt count), so they must always sum to 18.
 | 2026-06-09 | Suspect colour = row identity, not cell state | Keeps "state by form, not hue" intact for cells; the disc only says which card the row is. |
 | 2026-06-09 | Manual dark-mode switch (sun/moon) in the top bar | Dark mode was system-only; added an explicit light/dark toggle that overrides `prefers-color-scheme`, persisted to localStorage. Defaults to following the system until first toggle. |
 | 2026-06-09 | Turn rail adopts the Symbole language (pick by disc/glyph, not text) | The "Aktueller Zug" picker dumped 6–9 wide text-name chips (3 rows, ~264px) — crowded and inconsistent with the symbol grid. Suggestion/seen chips are now compact 44px disc/glyph chips (suspects 1 row, rooms 2), and the chosen suggestion shows as mini symbols in the step (no truncation). Names stay in aria-label/title. |
-| 2026-06-10 | Manual hand-size control via "assign the extras" toggle, setup-phase only | Standard deck makes every hand `base` or `base+1`, so the only choice is which `rem` seats hold the extra; a tap-to-toggle row sums to 18 by construction (no validation surface). Decouples `handExtras` from `starter`. Replaces blind reliance on the assumed deal distribution (which may not match the group's real deal) with explicit control. See "Deal & Hand Sizes (behavioral)". |
+| 2026-06-10 | Manual hand-size control via "assign the extras" toggle, setup-phase only | Standard deck makes every hand `base` or `base+1`, so the only choice is which `rem` seats hold the extra. The editor keeps exactly `rem` assigned and the setup gate enforces `|handExtras| === rem`, so the deal always sums to 18 (corrected from the earlier "by construction" claim — it sums to 18 only when the assignment is complete). Decouples `handExtras` from `starter`. Replaces blind reliance on the assumed deal distribution with explicit control. See "Deal & Hand Sizes (behavioral)". |
+| 2026-06-10 | Setup ends by explicit Submit, gated on (deal sums to 18) AND (your hand fully entered) | /autoplan eng review found the "purely derived" gate (`inSetup` from `knownCardsFor`) closes the picker early (engine auto-completes the hand) and can trap a user whose real hand is smaller than the assumed size. One explicit gate on the two invariants guarantees the engine starts consistent and removes the whole setup-bug class. Supersedes the derived-gate design. See "Setup Phase (behavioral)". |
