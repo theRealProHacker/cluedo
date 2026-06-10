@@ -78,6 +78,9 @@
   .chip{min-width:var(--hit);height:var(--hit);padding:0 6px;display:inline-flex;align-items:center;justify-content:center;border-radius:11px;border:1px solid var(--hairline);background:var(--paper);color:var(--ink);cursor:pointer;font-family:var(--mono);font-weight:700;font-size:15px}
   .chip.card{font-family:var(--sans);font-weight:600;font-size:13px;padding:0 12px}
   .chip.none{font-family:var(--sans);font-weight:600;font-size:13px;color:var(--muted);padding:0 14px}
+  .chip.player{flex-direction:column;gap:0;line-height:1;padding:0 6px;height:auto;min-height:var(--hit)}
+  .chip.player .tally{display:block;font-family:var(--mono);font-size:8px;font-weight:700;color:var(--muted);margin-top:0}
+  .chip.player[aria-pressed="true"] .tally{color:rgba(251,248,241,.75)}
   .chip[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#FBF8F1}
   /* symbol chips (Symbole): pick suspects/weapons/rooms by disc/glyph, not long names */
   .chip.sym{width:var(--hit);height:var(--hit);min-width:var(--hit);padding:0;display:inline-grid;place-items:center}
@@ -90,6 +93,9 @@
   .step.sug .v, .step.who .v{display:flex;align-items:center;gap:5px;overflow:visible}
   .step .v .disc{width:15px;height:15px;flex:none}
   .step .v .glyph{width:17px;height:17px;color:var(--ink);display:grid;place-items:center;flex:none}
+  th.seat .tally{display:block;font-family:var(--mono);font-size:8px;font-weight:700;color:var(--muted);margin-top:1px}
+  th.seat.hot .tally{color:rgba(251,248,241,.7)}
+  th.seat.you .tally{color:var(--navy)}
 
   /* matrix */
   main.matrix{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
@@ -172,6 +178,10 @@
   .sheet .close{border:0;background:transparent;color:var(--muted);font-size:22px;line-height:1;width:var(--hit);height:var(--hit);cursor:pointer}
   .setup{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--hairline)}
   .setup .lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  #mycards-count{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--muted)}
+  .card-picker{padding:4px 16px 12px;border-bottom:1px solid var(--hairline)}
+  .card-picker .grp{display:block;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:8px 0 4px}
+  .card-picker .chips-row{display:flex;flex-wrap:wrap;gap:6px}
   .pchips{display:flex;gap:6px}
   .pchips .chip{min-width:38px}
   .undo{margin:12px 16px 4px;border:1px solid var(--hairline);border-radius:10px;background:var(--paper);color:var(--ink);font-family:var(--sans);font-weight:600;font-size:13px;min-height:var(--hit);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
@@ -251,6 +261,11 @@
     <span class="lbl" data-i18n="starter">Startspieler</span>
     <div class="pchips" id="schips"></div>
   </div>
+  <div class="setup" id="setup-mycards">
+    <span class="lbl" data-i18n="my_cards">Meine Karten</span>
+    <span id="mycards-count"></span>
+  </div>
+  <div class="card-picker" id="card-picker-wrap"></div>
   <button class="undo" id="undo" disabled>↶ <span data-i18n="undo_last">Letzten rückgängig</span></button>
   <ol class="events" id="eventlist"></ol>
 </aside>
@@ -345,7 +360,7 @@ const I18N = {
        contradiction:'Widerspruch — prüfe den Verlauf', solved:'Gelöst!',
        has:'hat', hasnt:'hat nicht', shows:'zeigt', nobody_shows:'niemand zeigt',
        player:'Spieler', envelope:'Umschlag',
-       to_dark:'Dunkelmodus', to_light:'Hellmodus' },
+       to_dark:'Dunkelmodus', to_light:'Hellmodus', my_cards:'Meine Karten' },
   en:{ tagline:'Cluedo', turn:'Current turn', who_asks:'Who asked?', suggestion:'Suggestion',
        who_shows:'Who showed?', ok:'OK', nobody:'nobody', you:'you', env:'Env',
        suspects:'Suspects', weapons:'Weapons', rooms:'Rooms',
@@ -358,7 +373,7 @@ const I18N = {
        contradiction:'Contradiction — check the log', solved:'Solved!',
        has:'has', hasnt:"hasn't", shows:'shows', nobody_shows:'nobody shows',
        player:'Player', envelope:'Envelope',
-       to_dark:'Dark mode', to_light:'Light mode' },
+       to_dark:'Dark mode', to_light:'Light mode', my_cards:'My cards' },
 };
 
 /* ---------- persistent state (the source of truth) ---------- */
@@ -393,6 +408,13 @@ function handSizes(){
   const N = state.players, base = Math.floor(DEALT/N), rem = DEALT % N, size = {};
   for(let i=0;i<N;i++) size[(state.starter+i)%N] = base + (i >= N-rem ? 1 : 0);
   return size;
+}
+const isMyCard = e => e.type==='fact' && e.holder===0 && e.value==='has';
+function knownCardsFor(player){
+  let count = 0;
+  for(const c of ALL_CARDS)
+    if(derived.get(ckey(c.id, player))?.v === 'has') count++;
+  return count;
 }
 
 /* ---------- deduction engine ---------- */
@@ -522,6 +544,19 @@ function removeEvent(ev){ state.events = state.events.filter(e=>e!==ev); recompu
 function undoLast(){ if(state.events.length){ state.events.pop(); recompute(null, true); renderLog(); } }
 function newGame(players){ state.players = players; if(state.starter>=players) state.starter=0; state.events = []; turn = { asker:null, cards:[null,null,null], shower:null, seen:null }; activeStep='asker'; recompute(null, false); renderLog(); }
 function setStarter(s){ if(s===state.starter) return; state.starter = s; recompute(null, true); renderLog(); }
+function toggleMyCard(cardId){
+  const idx = state.events.findIndex(e => isMyCard(e) && e.card===cardId);
+  if(idx !== -1){
+    state.events.splice(idx, 1);
+  } else {
+    const max = handSizes()[0];
+    const alreadyKnown = derived.get(ckey(cardId, 0))?.v === 'has';
+    if(!alreadyKnown && knownCardsFor(0) >= max){ showToast(lang==='de' ? `Max. ${max} Karten` : `Max. ${max} cards`, true); return; }
+    state.events.push({ type:'fact', card:cardId, holder:0, value:'has' });
+  }
+  recompute(ckey(cardId, 0), true);
+  renderLog();
+}
 
 /* ---------- turn (rail) draft ---------- */
 let turn = { asker:null, cards:[null,null,null], shower:null, seen:null };
@@ -555,6 +590,7 @@ function renderHead(){
   corner.className='corner'; corner.scope='col';
   corner.setAttribute('aria-label', lang==='de' ? 'Karte' : 'Card');
   tr.appendChild(corner);
+  const sizes = handSizes();
   for(const col of cols()){
     const th = document.createElement('th');
     th.scope='col';
@@ -562,8 +598,9 @@ function renderHead(){
     th.dataset.col = col;
     if(col===ENV){ th.textContent = t('env'); th.setAttribute('aria-label', t('envelope')); }
     else {
-      th.innerHTML = `${col}<span class="role">${col===0?t('you'):''}</span>`;
-      th.setAttribute('aria-label', t('player')+' '+col+(col===0?' ('+t('you')+')':''));
+      const known = knownCardsFor(col), total = sizes[col];
+      th.innerHTML = `${col}<span class="role">${col===0?t('you'):''}</span><span class="tally" aria-hidden="true">${known}/${total}</span>`;
+      th.setAttribute('aria-label', t('player')+' '+col+(col===0?' ('+t('you')+')':'')+` ${known}/${total}`);
     }
     tr.appendChild(th);
   }
@@ -702,6 +739,17 @@ function symChip(c, pressed, on){
   b.setAttribute('aria-label', c[lang]); b.title=c[lang];
   b.addEventListener('click', on); return b;
 }
+/* a chip for a player seat showing their number + known/total tally */
+function playerChip(seat, pressed, on, total){
+  const b = document.createElement('button');
+  b.className = 'chip player'; b.type = 'button';
+  b.setAttribute('aria-pressed', pressed ? 'true' : 'false');
+  const known = knownCardsFor(seat);
+  b.innerHTML = `<span>${seat}</span><span class="tally" aria-hidden="true">${known}/${total}</span>`;
+  b.setAttribute('aria-label', `${t('player')} ${seat}${seat===0?' ('+t('you')+')':''} ${known}/${total}`);
+  b.addEventListener('click', on);
+  return b;
+}
 function renderPicker(){
   picker.replaceChildren();
   if(activeStep==='seen'){ // which of the 3 suggested cards you were shown
@@ -710,13 +758,14 @@ function renderPicker(){
       picker.appendChild(symChip(cardById[id], turn.seen===id, ()=>{ turn.seen=id; renderRail(); renderPicker(); }));
     }
   } else if(activeStep==='asker' || activeStep==='shower'){
+    const sizes = handSizes();
     for(const s of seats()){
       // you can't answer your own suggestion: exclude the asker from "who showed"
       if(activeStep==='shower' && s===turn.asker) continue;
-      picker.appendChild(chip(String(s), (activeStep==='asker'?turn.asker:turn.shower)===s, ()=>{
+      picker.appendChild(playerChip(s, (activeStep==='asker'?turn.asker:turn.shower)===s, ()=>{
         if(activeStep==='asker'){ turn.asker=s; turn.seen=null; setActive('suggest'); }
         else { turn.shower=s; turn.seen=null; if(needsSeen()) setActive('seen'); else renderRail(); }
-      }));
+      }, sizes[s]));
     }
     if(activeStep==='shower'){
       picker.appendChild(chip(t('nobody'), turn.shower==='nobody', ()=>{ turn.shower='nobody'; turn.seen=null; renderRail(); }, 'none'));
@@ -764,6 +813,8 @@ const pchips = document.getElementById('pchips');
 const schips = document.getElementById('schips');
 const setupStarter = document.getElementById('setup-starter');
 const logcount = document.getElementById('logcount');
+const cardPickerWrap = document.getElementById('card-picker-wrap');
+const myCardsCount   = document.getElementById('mycards-count');
 
 function evSummary(ev){
   const who = h => h===ENV ? t('envelope') : t('player')+' '+h;
@@ -800,6 +851,29 @@ function renderLog(){
     });
   }
   undoBtn.disabled = !state.events.length;
+  renderMyCards();
+}
+function renderMyCards(){
+  const max = handSizes()[0];
+  const selected = new Set(
+    state.events.filter(isMyCard).map(e => e.card)
+  );
+  myCardsCount.textContent = `${selected.size} ${t('of')} ${max}`;
+  cardPickerWrap.replaceChildren();
+  for(const [secKey, list] of SECTIONS){
+    const grp = document.createElement('span');
+    grp.className = 'grp'; grp.textContent = t(secKey);
+    cardPickerWrap.appendChild(grp);
+    const row = document.createElement('div');
+    row.className = 'chips-row';
+    for(const c of list){
+      const sel = selected.has(c.id);
+      const btn = symChip(c, sel, () => toggleMyCard(c.id));
+      if(!sel && selected.size >= max) btn.style.opacity = '0.45';
+      row.appendChild(btn);
+    }
+    cardPickerWrap.appendChild(row);
+  }
 }
 function updateLogCount(){
   const n = state.events.length;
