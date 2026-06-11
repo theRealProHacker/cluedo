@@ -1,0 +1,13 @@
+{
+  "name": "indizien-cluedo",
+  "private": true,
+  "description": "Tests for the Indizien Cluedo deduction cheat sheet (single-file index.html).",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0"
+  }
+}
