@@ -20,6 +20,10 @@ This is a single self-contained `index.html`; "the app" means that file.
   after the board locks. Decoupled from `starter`; persisted to localStorage.
 - **Asker preselect.** The turn rail preselects the next asker (the seat after the
   last suggestion's asker, or the starter on turn 1), only when no asker is chosen.
+- **Suggestion recommendation.** On your turn, the suggest picker rings the recommended
+  card per category (a bounded info-gain proxy — the still-uncertain, still-envelope-
+  possible card; cards you hold are never recommended). Subtle ring, highlight-only,
+  computed off the render path so it never blocks a paint.
 
 ### Changed
 - **Enter your hand in the grid, not a picker.** The separate my-cards picker is gone;

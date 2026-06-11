@@ -162,6 +162,13 @@ always present; logging a turn happens on the same surface.
   faint column tint, weaker than the shower's filled-navy header) so "whose turn" reads
   without competing with "who showed". The asker is preselected each turn, so the cue
   also flags when it's your move.
+- **Suggestion recommendation (your turn).** When you (seat 0) are the asker, the suggest
+  picker rings the recommended card per category — a subtle navy ring, highlight-only, no
+  banner or button. The pick is a bounded info-gain proxy: the still-relevant card whose
+  holder is most uncertain and that could still be in the envelope (cards you already hold
+  score zero). It is computed **off the render path** (a deferred tick) so it can never
+  block a paint, however heavy the heuristic later grows; the true expected-entropy solver
+  (model counting) stays the deferred "deep solve".
 - **Pull-up composer ("Variant A") is the retained alternative.** If the always-on rail
   ever costs too much vertical space, fall back to a bottom-sheet composer that expands
   on demand and collapses after commit, freeing full-height grid while scanning. Keep
@@ -254,3 +261,4 @@ lock to the turn rail, corrections via the event-log sheet.
 | 2026-06-10 | Setup ends by explicit Submit, gated on (deal sums to 18) AND (your hand fully entered) | /autoplan eng review found the "purely derived" gate (`inSetup` from `knownCardsFor`) closes the picker early (engine auto-completes the hand) and can trap a user whose real hand is smaller than the assumed size. One explicit gate on the two invariants guarantees the engine starts consistent and removes the whole setup-bug class. Supersedes the derived-gate design. See "Setup Phase (behavioral)". |
 | 2026-06-11 | Implemented setup phase, `handExtras`, asker preselect | Built the designed setup phase: a `setupDone` event + two-invariant Submit gate, a `handExtras` deal editor (rail during setup, sheet post-lock, keeps ≤`rem`), and opponent/envelope cells locked until Submit. Added asker preselect: the seat after the last suggestion's asker (starter on turn 1), set only when no asker is chosen. The deal-default seed stays on the prior last-`rem`-seats rule — a flip to first-`rem` (starter dealt first) is on hold pending a real-deal check. |
 | 2026-06-11 | Setup hand entry moves into the grid; constraints relax during setup; asker column cue | Dropped the separate my-cards picker — you now tap your own column (seat 0) in the grid to enter your hand (one input surface, "direct cell tap"). The "Current turn" rail label is hidden during setup and the setup instruction is enlarged. The hand-size engine rule is skipped while in setup so you can over-enter (total > 18) without contradictions; the Submit gate still validates exact counts on Start. Added a lighter column cue for the current asker (header underline + faint tint), distinct from the shower's filled header. Next: a non-blocking info-gain recommendation when it's your turn (deferred deep-solve proxy). |
+| 2026-06-11 | Suggestion recommendation: bounded info-gain proxy, highlight-only, off the render path | When you're the asker, the suggest picker rings the recommended card per category (the still-uncertain, still-envelope-possible card; cards you hold score zero). Subtle navy ring, no chrome. Computed in a deferred tick so it can never block a paint — the literal "eliminate the most possibilities" entropy solver needs model counting that would block on a phone, so it stays the deferred deep-solve. User chose the full solver but flagged "can't block rendering"; the proxy honours both. |
