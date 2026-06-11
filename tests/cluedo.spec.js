@@ -209,6 +209,31 @@ test.describe('turn rail', () => {
 });
 
 // ===========================================================================
+// SUGGESTION RECOMMENDATION — your turn only, highlight-only, never blocks render
+// ===========================================================================
+test.describe('recommendation', () => {
+  test('on your turn the suggest picker rings a recommended card', async ({ page }) => {
+    await boot(page); // fresh N=4
+    for (const c of ['s1', 's2', 's3', 'w1']) await cell(page, c, '0').click();
+    await page.locator('#submit').click();
+    await page.locator('.step[data-step="suggest"]').click(); // show the suspect chips
+
+    // a card you hold (s1) is never recommended; an uncertain one (s4) is
+    await expect(page.locator('#picker .chip.sym.reco')).toHaveCount(1);
+    await expect(page.locator('#picker .chip.sym[data-card="s4"]')).toHaveClass(/reco/);
+    await expect(page.locator('#picker .chip.sym[data-card="s1"]')).not.toHaveClass(/reco/);
+  });
+
+  test('no recommendation when it is not your turn (asker != 0)', async ({ page }) => {
+    // a prior suggestion by seat 0 rotates the preselected asker to seat 1
+    await boot(page, { players: 4, events: [DONE, suggestion(0, ['s1', 'w1', 'r1'], 2)] });
+    await expect(page.locator('.step[data-step="asker"] .v')).toHaveText('1');
+    await page.locator('.step[data-step="suggest"]').click();
+    await expect(page.locator('#picker .chip.sym.reco')).toHaveCount(0);
+  });
+});
+
+// ===========================================================================
 // DEAL INVARIANT — hands always sum to 18
 // ===========================================================================
 test.describe('deal invariant', () => {

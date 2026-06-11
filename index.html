@@ -100,6 +100,8 @@
   .chip.sym[aria-pressed="true"]{background:var(--navy);border-color:var(--navy)}
   .chip.sym[aria-pressed="true"] .glyph{color:#FBF8F1}
   .chip.sym[aria-pressed="true"] .disc{box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.6),0 0 0 2px rgba(255,255,255,.3)}
+  /* recommended card on your turn: subtle navy ring, highlight-only (no chrome) */
+  .chip.sym.reco{box-shadow:inset 0 0 0 1.5px var(--navy), 0 0 0 3px var(--navy-tint)}
   /* chosen cards shown as mini symbols in the rail steps (no text truncation) */
   .step.sug .v, .step.who .v{display:flex;align-items:center;gap:5px;overflow:visible}
   .step .v .disc{width:15px;height:15px;flex:none}
@@ -382,7 +384,7 @@ const I18N = {
        player:'Spieler', envelope:'Umschlag',
        to_dark:'Dunkelmodus', to_light:'Hellmodus', my_cards:'Meine Karten',
        setup_hint:'Tippe deine Handkarten in deiner Spalte (0).', submit:'Loslegen',
-       deal_extra:'Extra-Karte', setup_done:'Setup abgeschlossen', max_cards:'Max.' },
+       deal_extra:'Extra-Karte', setup_done:'Setup abgeschlossen', max_cards:'Max.', recommended:'empfohlen' },
   en:{ tagline:'Cluedo', turn:'Current turn', who_asks:'Who asked?', suggestion:'Suggestion',
        who_shows:'Who showed?', ok:'OK', nobody:'nobody', you:'you', env:'Env',
        suspects:'Suspects', weapons:'Weapons', rooms:'Rooms',
@@ -397,7 +399,7 @@ const I18N = {
        player:'Player', envelope:'Envelope',
        to_dark:'Dark mode', to_light:'Light mode', my_cards:'My cards',
        setup_hint:'Tap your hand in your column (0).', submit:'Start',
-       deal_extra:'Extra card', setup_done:'Setup complete', max_cards:'Max.' },
+       deal_extra:'Extra card', setup_done:'Setup complete', max_cards:'Max.', recommended:'recommended' },
 };
 
 /* ---------- persistent state (the source of truth) ---------- */
@@ -820,7 +822,7 @@ function chip(label, pressed, on, extra=''){
 /* a chip that shows a card's symbol (disc/glyph) instead of its long name */
 function symChip(c, pressed, on){
   const b=document.createElement('button');
-  b.className='chip sym'; b.type='button';
+  b.className='chip sym'; b.type='button'; b.dataset.card=c.id;
   b.innerHTML=symbolMarkup(c, secKeyOf(c.id));
   b.setAttribute('aria-pressed', pressed?'true':'false');
   b.setAttribute('aria-label', c[lang]); b.title=c[lang];
@@ -872,7 +874,51 @@ function renderPicker(){
       }));
     }
   }
+  refreshReco();   // mark the recommended chip for the category now shown (uses cached picks)
 }
+/* ---------- suggestion recommendation (your turn only) ----------
+   A bounded info-gain proxy: per category, the still-relevant card whose holder is most
+   uncertain and that could still be in the envelope — the suggestion most likely to teach
+   you something. Highlight-only (a subtle ring on the recommended chip), no chrome. It is
+   computed off the render path via setTimeout, so it can NEVER block a paint however heavy
+   the heuristic grows; a true expected-entropy solver (model counting) stays the deferred
+   "deep solve". */
+let recoPicks = {};
+let recoTimer = null;
+function computeReco(){
+  const picks = {};
+  const opponents = seats().filter(s => s !== 0);            // the seats a suggestion would poll
+  for(const [secKey, list] of SECTIONS){
+    let best = null, bestScore = 0;
+    for(const c of list){
+      if(derived.get(ckey(c.id, 0))?.v === 'has') continue;  // no point suggesting a card you hold
+      let unknown = 0;                                       // how uncertain its location still is
+      for(const s of opponents) if(derived.get(ckey(c.id, s))?.v == null) unknown++;
+      const envPossible = derived.get(ckey(c.id, ENV))?.v !== 'hasnt';
+      const score = unknown + (envPossible ? 3 : 0);         // weight envelope progress
+      if(score > bestScore){ bestScore = score; best = c.id; }
+    }
+    if(best) picks[secKey] = best;                           // omit a category that's already pinned
+  }
+  return picks;
+}
+function refreshReco(){
+  const idx = turn.cards.findIndex(c => !c);
+  const secKey = ['suspects','weapons','rooms'][idx === -1 ? 2 : idx];
+  const want = (activeStep==='suggest' && turn.asker===0 && !inSetup()) ? recoPicks[secKey] : null;
+  picker.querySelectorAll('.chip.sym').forEach(ch => {
+    const isReco = !!want && ch.dataset.card === want;
+    ch.classList.toggle('reco', isReco);
+    const name = cardById[ch.dataset.card] ? cardById[ch.dataset.card][lang] : '';
+    if(name) ch.setAttribute('aria-label', isReco ? `${name} — ${t('recommended')}` : name);
+  });
+}
+function scheduleReco(){
+  if(recoTimer){ clearTimeout(recoTimer); recoTimer = null; }
+  if(inSetup() || turn.asker !== 0){ recoPicks = {}; refreshReco(); return; }
+  recoTimer = setTimeout(() => { recoTimer = null; recoPicks = computeReco(); refreshReco(); }, 0);
+}
+
 document.querySelectorAll('.steps .step').forEach(s=> s.addEventListener('click', ()=> setActive(s.dataset.step)));
 commitBtn.addEventListener('click', commitSuggestion);
 submitBtn.addEventListener('click', submitSetup);
@@ -998,6 +1044,7 @@ function showToast(msg, bad){
 function render(){
   renderBody(); renderRail(); renderPicker(); renderVerdict(); updateLogCount();
   if(!sheet.hidden) renderLog();
+  scheduleReco();   // recompute the (off-render-path) recommendation for the new state
 }
 function applyI18n(){
   document.documentElement.lang = lang;
