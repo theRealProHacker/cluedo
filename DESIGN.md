@@ -161,7 +161,8 @@ always present; logging a turn happens on the same surface.
   The **current asker** also gets a *lighter* column cue (a navy header underline + a
   faint column tint, weaker than the shower's filled-navy header) so "whose turn" reads
   without competing with "who showed". The asker is preselected each turn, so the cue
-  also flags when it's your move.
+  also flags when it's your move; because the asker is auto-chosen, the rail advances
+  straight to the suggestion step (tap the asker step to change who asked).
 - **Suggestion recommendation (your turn).** When you (seat 0) are the asker, the suggest
   picker rings the recommended card per category — a subtle navy ring, highlight-only, no
   banner or button. The pick is a bounded info-gain proxy: the still-relevant card whose
@@ -191,10 +192,10 @@ its dealt count), so they must always sum to 18.
   when exactly `rem` extras are assigned** (`|handExtras| === rem`). The editor keeps
   exactly `rem` selected and the setup gate refuses to start until it holds, so the
   engine never sees a deal that sums to anything but 18. Stored as `handExtras` (a set
-  of seats); defaults to the prior rule (last seats in turn order) so untouched games
-  are unchanged. (A flip to the first `rem` seats — modelling a clockwise deal where the
-  starter is dealt first — is on hold pending a real-deal check; the editor overrides it
-  either way.)
+  of seats); defaults to the last `rem` seats in turn order, so the starter holds the
+  *smaller* hand. A real-deal check (2026-06-11) confirmed this: the first player to act
+  was dealt fewer cards, so the proposed flip to the first `rem` seats was dropped. The
+  editor overrides the seed per game regardless.
 - **`starter` and `handExtras` are separate concerns.** `starter` drives turn order
   and the asker preselect; `handExtras` drives hand sizes. They were tangled before
   (hand sizes derived from `starter`); the manual control decouples them.
@@ -262,3 +263,5 @@ lock to the turn rail, corrections via the event-log sheet.
 | 2026-06-11 | Implemented setup phase, `handExtras`, asker preselect | Built the designed setup phase: a `setupDone` event + two-invariant Submit gate, a `handExtras` deal editor (rail during setup, sheet post-lock, keeps ≤`rem`), and opponent/envelope cells locked until Submit. Added asker preselect: the seat after the last suggestion's asker (starter on turn 1), set only when no asker is chosen. The deal-default seed stays on the prior last-`rem`-seats rule — a flip to first-`rem` (starter dealt first) is on hold pending a real-deal check. |
 | 2026-06-11 | Setup hand entry moves into the grid; constraints relax during setup; asker column cue | Dropped the separate my-cards picker — you now tap your own column (seat 0) in the grid to enter your hand (one input surface, "direct cell tap"). The "Current turn" rail label is hidden during setup and the setup instruction is enlarged. The hand-size engine rule is skipped while in setup so you can over-enter (total > 18) without contradictions; the Submit gate still validates exact counts on Start. Added a lighter column cue for the current asker (header underline + faint tint), distinct from the shower's filled header. Next: a non-blocking info-gain recommendation when it's your turn (deferred deep-solve proxy). |
 | 2026-06-11 | Suggestion recommendation: bounded info-gain proxy, highlight-only, off the render path | When you're the asker, the suggest picker rings the recommended card per category (the still-uncertain, still-envelope-possible card; cards you hold score zero). Subtle navy ring, no chrome. Computed in a deferred tick so it can never block a paint — the literal "eliminate the most possibilities" entropy solver needs model counting that would block on a phone, so it stays the deferred deep-solve. User chose the full solver but flagged "can't block rendering"; the proxy honours both. |
+| 2026-06-11 | Real-deal check closes the deal-default question: keep last-`rem`-seats | User watched an actual deal: the starter (first to act) was dealt **fewer** cards. So the existing default (extras to the last `rem` seats, starter holds the smaller hand) is confirmed and the proposed flip to first-`rem` is dropped for good. No code change; the deal editor still overrides per game. |
+| 2026-06-11 | Auto-advance to the suggestion step when the asker is preselected | The asker is chosen for you each turn, so the rail jumps straight to picking the suggestion instead of sitting on the asker step (one less tap per turn). Tap the asker step to change who asked. |
