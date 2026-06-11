@@ -17,3 +17,9 @@ paper (#fbfaf6) and ink (#2b2926). The grid's left margin is **symbols** — sus
 colour discs, weapons/rooms = inked glyphs, tap to reveal the full name. Cell state is
 carried by form, not hue (suspect colour is row identity, not state); provenance is
 solid = you entered it, hollow/grey = the engine deduced it.
+
+## Testing
+Playwright end-to-end tests live in `tests/cluedo.spec.js`; run with `npm test` (see
+TESTING.md). Engine deduction cases are tested by seeding the event log via localStorage
+and asserting the derived grid. When you change a deduction rule or the setup gate, add or
+update a seed-and-assert test for it — a bug worth fixing is worth a regression test.

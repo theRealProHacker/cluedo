@@ -158,6 +158,10 @@ always present; logging a turn happens on the same surface.
   It is modeless (no overlay), so the grid stays visible the whole time.
   As you pick who showed, that player's **column highlights live** in the grid below —
   input and consequence in the same glance. An `OK` button commits; the rail resets.
+  The **current asker** also gets a *lighter* column cue (a navy header underline + a
+  faint column tint, weaker than the shower's filled-navy header) so "whose turn" reads
+  without competing with "who showed". The asker is preselected each turn, so the cue
+  also flags when it's your move.
 - **Pull-up composer ("Variant A") is the retained alternative.** If the always-on rail
   ever costs too much vertical space, fall back to a bottom-sheet composer that expands
   on demand and collapses after commit, freeing full-height grid while scanning. Keep
@@ -197,21 +201,30 @@ its dealt count), so they must always sum to 18.
   rather than the app's assumed distribution.
 
 ## Setup Phase (behavioral)
-The game opens in a **setup phase**: a my-cards picker (tap your hand) sits where the
-turn rail goes, opponent cells are dimmed and disabled with a hint, and the deal is
-specified (`handExtras`, see above). Setup ends **only by an explicit Submit**, never
-inferred from card counts. Submit is enabled only when BOTH invariants hold:
+The game opens in a **setup phase**: the "Current turn" rail label is hidden, the rail
+shows a **prominent instruction** plus the deal control (`handExtras`, see above), and
+opponent + envelope cells are dimmed and disabled. **You enter your hand by tapping your
+own column (seat 0) in the grid** — there is no separate my-cards picker; the grid is
+the one input surface (matches "direct cell tap"). A small `have/dealt` count rides in
+the instruction line. Setup ends **only by an explicit Submit**, never inferred from
+card counts. Submit is enabled only when BOTH invariants hold:
 1. **The deal sums to 18** — all `rem` extras assigned, i.e. `|handExtras| === rem`.
 2. **Your hand is fully entered** — your marked cards equal your dealt count:
    `state.events.filter(isMyCard).length === handSizes()[0]` (count manual facts, not
    the derived `knownCardsFor`, so no engine edge case can perturb the gate).
 
-This single gate guarantees the deduction engine starts from a consistent state (hands
-sum to 18, your hand known), which removes the whole class of setup bugs: the picker
-can't close early, you can't be trapped with a hand you can't finish, and the engine
-never sees a sum-≠-18 deal. On Submit, completion is recorded (an event keeps the
-event-log-as-source-of-truth model and makes re-entering setup just an undo); cells
-then lock to the turn rail, corrections via the event-log sheet.
+- **Constraints are relaxed during entry.** The hand-size rule (each seat holds exactly
+  its dealt count) is **skipped while in setup**, so you can over-enter your column
+  (total > 18) without the engine flagging a contradiction mid-typing. The two-invariant
+  Submit gate is the real check — it only enables at exactly your dealt count, so the
+  engine still starts consistent. (Validate on Start, not on every tap.)
+
+This gate guarantees the deduction engine starts from a consistent state (hands sum to
+18, your hand known), which removes the whole class of setup bugs: you can't close setup
+early, you can't be trapped with a hand you can't finish, and the engine never sees a
+sum-≠-18 deal at play time. On Submit, completion is recorded (an event keeps the
+event-log-as-source-of-truth model and makes re-entering setup just an undo); cells then
+lock to the turn rail, corrections via the event-log sheet.
 - **Supersedes** the earlier "purely derived setup gate" idea (`inSetup` from
   `knownCardsFor(0)`): that derivation closed the picker early because the engine
   auto-completes your hand, and could trap you if your real hand was smaller than the
@@ -240,3 +253,4 @@ then lock to the turn rail, corrections via the event-log sheet.
 | 2026-06-10 | Manual hand-size control via "assign the extras" toggle, setup-phase only | Standard deck makes every hand `base` or `base+1`, so the only choice is which `rem` seats hold the extra. The editor keeps exactly `rem` assigned and the setup gate enforces `|handExtras| === rem`, so the deal always sums to 18 (corrected from the earlier "by construction" claim — it sums to 18 only when the assignment is complete). Decouples `handExtras` from `starter`. Replaces blind reliance on the assumed deal distribution with explicit control. See "Deal & Hand Sizes (behavioral)". |
 | 2026-06-10 | Setup ends by explicit Submit, gated on (deal sums to 18) AND (your hand fully entered) | /autoplan eng review found the "purely derived" gate (`inSetup` from `knownCardsFor`) closes the picker early (engine auto-completes the hand) and can trap a user whose real hand is smaller than the assumed size. One explicit gate on the two invariants guarantees the engine starts consistent and removes the whole setup-bug class. Supersedes the derived-gate design. See "Setup Phase (behavioral)". |
 | 2026-06-11 | Implemented setup phase, `handExtras`, asker preselect | Built the designed setup phase: a `setupDone` event + two-invariant Submit gate, a `handExtras` deal editor (rail during setup, sheet post-lock, keeps ≤`rem`), and opponent/envelope cells locked until Submit. Added asker preselect: the seat after the last suggestion's asker (starter on turn 1), set only when no asker is chosen. The deal-default seed stays on the prior last-`rem`-seats rule — a flip to first-`rem` (starter dealt first) is on hold pending a real-deal check. |
+| 2026-06-11 | Setup hand entry moves into the grid; constraints relax during setup; asker column cue | Dropped the separate my-cards picker — you now tap your own column (seat 0) in the grid to enter your hand (one input surface, "direct cell tap"). The "Current turn" rail label is hidden during setup and the setup instruction is enlarged. The hand-size engine rule is skipped while in setup so you can over-enter (total > 18) without contradictions; the Submit gate still validates exact counts on Start. Added a lighter column cue for the current asker (header underline + faint tint), distinct from the shower's filled header. Next: a non-blocking info-gain recommendation when it's your turn (deferred deep-solve proxy). |
