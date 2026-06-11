@@ -95,6 +95,9 @@ test.describe('setup phase', () => {
     await expect(page.locator('.steps')).toBeVisible();
     await expect(page.locator('.railhead')).toBeVisible();
     await expect(page.locator('.step[data-step="asker"] .v')).toHaveText('0'); // starter
+    // the asker is auto-chosen, so the rail jumps straight to picking the suggestion
+    await expect(page.locator('.step[data-step="suggest"]')).toHaveAttribute('aria-current', 'step');
+    await expect(page.locator('#picker .chip.sym')).toHaveCount(6); // suspect chips, not seat chips
   });
 
   test('even deal (N=6) hides the extras editor; uneven (N=5) shows it and gates on exactly rem', async ({ page }) => {
@@ -240,6 +243,7 @@ test.describe('deal invariant', () => {
   for (const players of [2, 3, 4, 5, 6]) {
     test(`hand sizes sum to 18 for N=${players}`, async ({ page }) => {
       await boot(page, { players, starter: 0, handExtras: undefined, events: [DONE] });
+      await page.locator('.step[data-step="asker"]').click(); // reveal the seat picker (turn auto-advances to suggest)
       // the asker picker shows every seat's known/total tally; totals must sum to 18
       const tallies = await page.locator('#picker .chip.player .tally').allTextContents();
       expect(tallies).toHaveLength(players);
@@ -276,6 +280,7 @@ test.describe('persistence & i18n', () => {
   test('invalid handExtras seats are filtered on load (no out-of-range extra)', async ({ page }) => {
     // seat 9 does not exist for N=4; it must be dropped, leaving the deal still summing to 18.
     await boot(page, { players: 4, starter: 0, handExtras: [9, 2], events: [DONE] });
+    await page.locator('.step[data-step="asker"]').click(); // reveal the seat picker
     const tallies = await page.locator('#picker .chip.player .tally').allTextContents();
     const sum = tallies.reduce((acc, t) => acc + Number(t.split('/')[1]), 0);
     expect(sum).toBe(18);

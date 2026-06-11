@@ -438,8 +438,8 @@ const ckey = (cardId, col) => `${cardId}|${col}`;
    the `rem` leftover cards make some hands one larger. WHICH seats hold the extra is
    stored in `state.handExtras` (a set of seats), so hand sizes are decoupled from the
    starter and can be matched to your group's real deal. The default seeds the extras to
-   the last `rem` seats in turn order (the prior rule, pending a real-deal check);
-   override it per game in the deal editor. */
+   the last `rem` seats in turn order, so the starter holds the smaller hand (confirmed
+   against a real deal, 2026-06-11); override it per game in the deal editor. */
 const DEALT = 18;
 function defaultExtras(){
   const N = state.players, rem = DEALT % N, set = new Set();
@@ -593,8 +593,7 @@ function commitSuggestion(){
   if(needsSeen() && turn.cards.includes(turn.seen)){
     state.events.push({ type:'fact', card:turn.seen, holder:turn.shower, value:'has' });
   }
-  turn = freshTurn(); preselectAsker();
-  activeStep = 'asker';
+  turn = freshTurn(); preselectAsker();   // preselectAsker advances to the suggest step
   recompute(null, true);
   showToast(t('logged'));
 }
@@ -604,7 +603,7 @@ function commitSuggestion(){
 function submitSetup(){
   if(!setupReady()) return;
   state.events.push({ type:'setupDone' });
-  turn = freshTurn(); preselectAsker(); activeStep='asker';
+  turn = freshTurn(); preselectAsker();   // preselectAsker advances to the suggest step
   recompute(null, true); renderLog();
   showToast(t('setup_done'));
 }
@@ -627,11 +626,14 @@ const freshTurn = () => ({ asker:null, cards:[null,null,null], shower:null, seen
 let turn = freshTurn();
 let activeStep = 'asker';
 // the asker rotates clockwise: preselect the seat after the last suggestion's asker
-// (or the starter for the first turn), but only when no asker is chosen yet.
+// (or the starter for the first turn), but only when no asker is chosen yet. Since the
+// asker is now chosen for you, jump straight to the suggestion step (tap the asker step
+// to override).
 function preselectAsker(){
   if(turn.asker!=null) return;
   const sugs = state.events.filter(e => e.type==='suggestion');
   turn.asker = sugs.length ? (sugs[sugs.length-1].asker + 1) % state.players : state.starter;
+  activeStep = 'suggest';
 }
 // when YOU (seat 0) ask and a real player shows, you see the exact card — a hard fact,
 // not the weak "one of three" the other players' turns give you.
