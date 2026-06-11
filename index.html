@@ -76,12 +76,11 @@
   .step[aria-current="step"] small{color:var(--navy)}
   .ok{border:0;border-radius:9px;background:var(--navy);color:#FBF8F1;font-family:var(--sans);font-weight:700;font-size:13px;padding:0 16px;min-height:var(--hit);cursor:pointer}
   .ok:disabled{opacity:.4;cursor:not-allowed}
-  /* setup phase: the rail hosts hand entry + the deal until you Submit */
-  .setupbar{display:flex;flex-direction:column;gap:7px}
-  .setup-hint{margin:2px 0 0;font-size:12px;font-style:italic;font-family:var(--serif);color:var(--muted)}
-  .setupbar .setup-count{display:flex;align-items:baseline;justify-content:space-between;margin-top:2px}
-  .setupbar .setup-count .lbl{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-  .setupbar #rail-mycount{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--muted)}
+  /* setup phase: the rail hosts the deal + a prominent instruction; you tap your
+     own column in the grid below to enter your hand, then Submit. */
+  .setupbar{display:flex;flex-direction:column;gap:9px}
+  .setup-hint{margin:2px 0 0;font-family:var(--serif);font-size:16px;font-weight:500;color:var(--ink);line-height:1.3}
+  .setup-hint .count{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--muted);margin-left:7px}
   .card-picker.railpick{padding:0;border:0}
   .card-picker.railpick .grp{margin:2px 0 4px}
   .setupbar .ok{margin-top:2px}
@@ -121,11 +120,14 @@
   th.seat.env{background:var(--gold-tint);color:var(--gold);font-family:var(--sans);font-size:11px;border-left:1px solid var(--hairline)}
   th.seat.hot{background:var(--navy);color:#FBF8F1;border-radius:6px 6px 0 0}
   th.seat.hot .role{color:#FBF8F1;opacity:.85}
+  /* current asker (whose turn it is): a lighter cue than the shower's filled header */
+  th.seat.asking{box-shadow:inset 0 -2px 0 var(--navy);color:var(--navy)}
   tr.sec th{font-family:var(--serif);font-weight:500;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-align:left;padding:12px 8px 4px;position:sticky;left:0;background:var(--paper)}
   tbody th.card{position:sticky;left:0;z-index:1;background:var(--surface);width:56px;min-width:56px;padding:0;height:var(--hit);border-right:1px solid var(--hairline);border-bottom:1px solid var(--hairline);overflow:visible}
   td.cellwrap{padding:0;border-bottom:1px solid var(--hairline);border-left:1px solid var(--hairline)}
   td.cellwrap.env{background:var(--gold-tint)}
   td.cellwrap.hotcol{background:rgba(31,58,95,.07)}
+  td.cellwrap.askcol{background:rgba(31,58,95,.04)}
   button.cell{width:100%;min-width:var(--hit);height:var(--hit);border:0;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;padding:0}
   /* Has — manual: solid navy square, ivory check (loud). */
   .mark-has{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:4px;background:var(--navy);color:#FBF8F1;font-size:13px}
@@ -193,7 +195,6 @@
   .sheet .close{border:0;background:transparent;color:var(--muted);font-family:var(--sans);font-size:22px;line-height:1;width:var(--hit);height:var(--hit);cursor:pointer}
   .setup{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--hairline)}
   .setup .lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-  #mycards-count{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--muted)}
   .card-picker{padding:4px 16px 12px;border-bottom:1px solid var(--hairline)}
   .card-picker .grp{display:block;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:8px 0 4px}
   .card-picker .chips-row{display:flex;flex-wrap:wrap;gap:6px}
@@ -246,10 +247,8 @@
     </div>
     <div class="picker" id="picker" aria-label="Auswahl"></div>
     <div class="setupbar" id="setupbar" hidden>
-      <p class="setup-hint" id="setup-hint" data-i18n="setup_hint">Setup</p>
+      <p class="setup-hint" id="setup-hint">Setup</p>
       <div class="card-picker railpick" id="rail-extras" hidden></div>
-      <div class="setup-count"><span class="lbl" data-i18n="my_cards">Meine Karten</span><span id="rail-mycount"></span></div>
-      <div class="card-picker railpick" id="rail-mycards"></div>
       <button class="ok" id="submit" disabled data-i18n="submit">Loslegen</button>
     </div>
   </section>
@@ -287,11 +286,6 @@
     <span class="lbl" data-i18n="deal_extra">Extra-Karte</span>
     <div class="pchips" id="xchips"></div>
   </div>
-  <div class="setup" id="setup-mycards">
-    <span class="lbl" data-i18n="my_cards">Meine Karten</span>
-    <span id="mycards-count"></span>
-  </div>
-  <div class="card-picker" id="card-picker-wrap"></div>
   <button class="undo" id="undo" disabled>↶ <span data-i18n="undo_last">Letzten rückgängig</span></button>
   <ol class="events" id="eventlist"></ol>
 </aside>
@@ -387,7 +381,7 @@ const I18N = {
        has:'hat', hasnt:'hat nicht', shows:'zeigt', nobody_shows:'niemand zeigt',
        player:'Spieler', envelope:'Umschlag',
        to_dark:'Dunkelmodus', to_light:'Hellmodus', my_cards:'Meine Karten',
-       setup_hint:'Setup — tippe deine Karten, dann „Loslegen".', submit:'Loslegen',
+       setup_hint:'Tippe deine Handkarten in deiner Spalte (0).', submit:'Loslegen',
        deal_extra:'Extra-Karte', setup_done:'Setup abgeschlossen', max_cards:'Max.' },
   en:{ tagline:'Cluedo', turn:'Current turn', who_asks:'Who asked?', suggestion:'Suggestion',
        who_shows:'Who showed?', ok:'OK', nobody:'nobody', you:'you', env:'Env',
@@ -402,7 +396,7 @@ const I18N = {
        has:'has', hasnt:"hasn't", shows:'shows', nobody_shows:'nobody shows',
        player:'Player', envelope:'Envelope',
        to_dark:'Dark mode', to_light:'Light mode', my_cards:'My cards',
-       setup_hint:'Setup — tap your hand, then “Start".', submit:'Start',
+       setup_hint:'Tap your hand in your column (0).', submit:'Start',
        deal_extra:'Extra card', setup_done:'Setup complete', max_cards:'Max.' },
 };
 
@@ -423,7 +417,11 @@ function load(){
         : null;
     }}
   }catch{ /* corrupt store — start clean */ }
-  if(!Array.isArray(state.handExtras)) state.handExtras = [...defaultExtras()];   // seed the deal default
+  // the stored deal must hold exactly `rem` distinct extras, else it wouldn't sum to 18
+  // (e.g. an out-of-range seat got filtered out). Reseed the default if it doesn't.
+  const rem = DEALT % state.players;
+  const ex = Array.isArray(state.handExtras) ? [...new Set(state.handExtras)] : null;
+  state.handExtras = (ex && ex.length === rem) ? ex : [...defaultExtras()];
 }
 function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch{} }
 
@@ -525,6 +523,7 @@ function deriveAll(){
   // 2. fixed-point propagation
   const COLS = cols();
   const HAND = handSizes();
+  const setup = inSetup();   // during setup, don't enforce hand sizes — you may over-enter freely; the Submit gate is the real check
   let round = 0, changed = true;
   while(changed){
     changed = false; round++;
@@ -552,8 +551,9 @@ function deriveAll(){
       else if(cand.length===1) changed = set(cand[0],ENV,'has',false,round) || changed;
       else if(cand.length===0) contradiction = true;
     }
-    // (d) each seat holds exactly its dealt hand size (the card-counting paper can't do)
-    for(const seat of seats()){
+    // (d) each seat holds exactly its dealt hand size (the card-counting paper can't do).
+    // Skipped during setup so you can over-enter your column without contradictions.
+    if(!setup) for(const seat of seats()){
       const size = HAND[seat]; let hasCount = 0; const unknown = [];
       for(const c of ALL_CARDS){ const v = val(c.id,seat); if(v==='has') hasCount++; else if(v!=='hasnt') unknown.push(c.id); }
       if(hasCount>size || hasCount+unknown.length<size){ contradiction = true; }
@@ -619,19 +619,6 @@ function removeEvent(ev){ state.events = state.events.filter(e=>e!==ev); recompu
 function undoLast(){ if(state.events.length){ state.events.pop(); recompute(null, true); renderLog(); } }
 function newGame(players){ state.players = players; if(state.starter>=players) state.starter=0; state.handExtras=[...defaultExtras()]; state.events = []; turn = freshTurn(); activeStep='asker'; recompute(null, false); renderLog(); }
 function setStarter(s){ if(s===state.starter) return; state.starter = s; state.handExtras=[...defaultExtras()]; recompute(null, true); renderLog(); }
-function toggleMyCard(cardId){
-  const idx = state.events.findIndex(e => isMyCard(e) && e.card===cardId);
-  if(idx !== -1){
-    state.events.splice(idx, 1);
-  } else {
-    const max = handSizes()[0];
-    const alreadyKnown = derived.get(ckey(cardId, 0))?.v === 'has';
-    if(!alreadyKnown && knownCardsFor(0) >= max){ showToast(lang==='de' ? `Max. ${max} Karten` : `Max. ${max} cards`, true); return; }
-    state.events.push({ type:'fact', card:cardId, holder:0, value:'has' });
-  }
-  recompute(ckey(cardId, 0), true);
-  renderLog();
-}
 
 /* ---------- turn (rail) draft ---------- */
 const freshTurn = () => ({ asker:null, cards:[null,null,null], shower:null, seen:null });
@@ -677,7 +664,7 @@ function renderHead(){
   for(const col of cols()){
     const th = document.createElement('th');
     th.scope='col';
-    th.className = 'seat' + (col===ENV?' env':'') + (col===0?' you':'') + (turn.shower===col && col!==ENV?' hot':'');
+    th.className = 'seat' + (col===ENV?' env':'') + (col===0?' you':'') + (turn.shower===col && col!==ENV?' hot':'') + (turn.asker===col && col!==ENV && !inSetup()?' asking':'');
     th.dataset.col = col;
     if(col===ENV){ th.textContent = t('env'); th.setAttribute('aria-label', t('envelope')); }
     else {
@@ -731,7 +718,7 @@ function renderBody(){
       for(const col of COLS){
         const locked = setup && col!==0;   // only your own column is editable in setup
         const td = document.createElement('td');
-        td.className = 'cellwrap' + (col===ENV?' env':'') + (turn.shower===col && col!==ENV?' hotcol':'') + (locked?' setupdim':'');
+        td.className = 'cellwrap' + (col===ENV?' env':'') + (turn.shower===col && col!==ENV?' hotcol':'') + (turn.asker===col && col!==ENV && turn.shower!==col && !setup?' askcol':'') + (locked?' setupdim':'');
         const d = derived.get(ckey(c.id,col));
         const v = d ? d.v : 'unknown', manual = d ? d.manual : false;
         const btn = document.createElement('button');
@@ -776,10 +763,12 @@ const commitBtn = document.getElementById('commit');
 function setActive(step){ activeStep = step; renderRail(); renderPicker(); }
 
 const stepsEl = document.querySelector('.steps');
+const railhead = document.querySelector('.railhead');
 const setupbar = document.getElementById('setupbar');
 const submitBtn = document.getElementById('submit');
 function renderRail(){
   const setup = inSetup();
+  railhead.hidden = setup;   // no "Current turn" label during setup
   stepsEl.hidden = setup; picker.hidden = setup; setupbar.hidden = !setup;
   if(setup){ renderSetupbar(); renderHead(); refreshHotCols(); return; }
   document.querySelectorAll('.steps .step').forEach(s=>{
@@ -813,10 +802,13 @@ function renderRail(){
   renderHead(); refreshHotCols();
 }
 function refreshHotCols(){
+  const setup = inSetup();
   document.querySelectorAll('td.cellwrap').forEach(td=>{
     const col = td.querySelector('button.cell')?.dataset.col;
-    const hot = col!=null && col!==ENV && String(turn.shower)===col;
-    td.classList.toggle('hotcol', !!hot);
+    const isCol = c => col!=null && col!==ENV && String(c)===col;
+    const hot = isCol(turn.shower);
+    td.classList.toggle('hotcol', hot);
+    td.classList.toggle('askcol', !setup && !hot && isCol(turn.asker));   // current asker, lighter than shower
   });
 }
 function chip(label, pressed, on, extra=''){
@@ -911,11 +903,8 @@ const pchips = document.getElementById('pchips');
 const schips = document.getElementById('schips');
 const setupStarter = document.getElementById('setup-starter');
 const logcount = document.getElementById('logcount');
-const cardPickerWrap = document.getElementById('card-picker-wrap');
-const myCardsCount   = document.getElementById('mycards-count');
 const xchips         = document.getElementById('xchips');
 const setupExtras    = document.getElementById('setup-extras');
-const setupMycards   = document.getElementById('setup-mycards');
 
 function evSummary(ev){
   const who = h => h===ENV ? t('envelope') : t('player')+' '+h;
@@ -941,9 +930,6 @@ function renderLog(){
   // the deal: which seats hold the extra card (structural — also adjustable post-lock)
   setupExtras.hidden = !uneven;
   if(uneven) buildExtraChips(xchips);
-  // your hand lives in the rail during setup; the sheet copy is for post-lock corrections
-  const setup = inSetup();
-  setupMycards.hidden = setup; cardPickerWrap.hidden = setup;
   // event list (newest first)
   eventlist.replaceChildren();
   if(!state.events.length){
@@ -959,30 +945,7 @@ function renderLog(){
     });
   }
   undoBtn.disabled = !state.events.length;
-  renderMyCards();
 }
-function buildMyCards(wrap, countEl){
-  const max = handSizes()[0];
-  const known0 = knownCardsFor(0);
-  const selected = new Set(state.events.filter(isMyCard).map(e => e.card));
-  if(countEl) countEl.textContent = `${selected.size} ${t('of')} ${max}`;
-  wrap.replaceChildren();
-  for(const [secKey, list] of SECTIONS){
-    const grp = document.createElement('span');
-    grp.className = 'grp'; grp.textContent = t(secKey);
-    wrap.appendChild(grp);
-    const row = document.createElement('div');
-    row.className = 'chips-row';
-    for(const c of list){
-      const sel = selected.has(c.id);
-      const btn = symChip(c, sel, () => toggleMyCard(c.id));
-      if(!sel && known0 >= max) btn.style.opacity = '0.45';
-      row.appendChild(btn);
-    }
-    wrap.appendChild(row);
-  }
-}
-function renderMyCards(){ buildMyCards(cardPickerWrap, myCardsCount); }
 // the deal editor: tap the `rem` seats that hold the extra card. Keeps at most `rem`
 // selected (excess chips dim); the setup gate then requires exactly `rem`.
 function buildExtraChips(rowEl){
@@ -1007,7 +970,9 @@ function renderSetupbar(){
     buildExtraChips(row);
     railExtras.append(g, row);
   }
-  buildMyCards(document.getElementById('rail-mycards'), document.getElementById('rail-mycount'));
+  // your hand is entered by tapping your own column in the grid; show progress in the hint
+  const max = handSizes()[0], have = state.events.filter(isMyCard).length;
+  document.getElementById('setup-hint').innerHTML = `${t('setup_hint')}<span class="count">${have}/${max}</span>`;
   submitBtn.disabled = !setupReady();
 }
 function updateLogCount(){
